@@ -649,7 +649,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { name: "Financial", count: 45, color: "bg-green-500", icon: CreditCard, trend: "+5" },
+                    { name: "Financial", count: 45, color: "bg-green-500", icon: '', trend: "+5" },
                     { name: "Identity", count: 32, color: "bg-blue-500", icon: User, trend: "+2" },
                     { name: "Insurance", count: 28, color: "bg-amber-500", icon: Shield, trend: "+1" },
                     { name: "Medical", count: 24, color: "bg-red-500", icon: Heart, trend: "+3" }
