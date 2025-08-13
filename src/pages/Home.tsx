@@ -152,7 +152,7 @@ const professionalServices = [
     rating: 4.9,
     reviews: 892,
     category: "Legal",
-    icon: Scale,
+    icon: Calculator,
     savings: "Avoid costly mistakes",
     duration: "90 min consultation"
   },
