@@ -34,20 +34,23 @@ export default function Sidebar() {
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border">
+      <div className="flex items-center justify-between p-6 border-b border-border">
         <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-          <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-            <FileText className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 bg-gradient-header rounded-xl flex items-center justify-center shadow-medium">
+            <FileText className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
-            <h1 className="text-lg font-semibold text-foreground">DocuVault AI</h1>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">DocuVault AI</h1>
+              <p className="text-sm text-muted-foreground font-medium">Smart Document Manager</p>
+            </div>
           )}
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8"
+          className="h-8 w-8 hover:bg-secondary/50"
         >
           {isCollapsed ? (
             <ChevronRight className="w-4 h-4" />
@@ -58,7 +61,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-3">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.href;
           
@@ -67,8 +70,10 @@ export default function Sidebar() {
               key={item.name}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-muted",
-                isActive && "bg-primary text-primary-foreground",
+                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
+                isActive 
+                  ? "bg-gradient-header text-white shadow-medium" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                 isCollapsed && "justify-center px-2"
               )}
             >
@@ -84,12 +89,12 @@ export default function Sidebar() {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 text-muted-foreground hover:text-destructive",
+            "w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl py-3",
             isCollapsed && "justify-center px-2"
           )}
         >
           <LogOut className="w-5 h-5 flex-shrink-0" />
-          {!isCollapsed && <span>Logout</span>}
+          {!isCollapsed && <span className="font-semibold">Logout</span>}
         </Button>
       </div>
     </div>

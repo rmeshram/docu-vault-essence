@@ -86,30 +86,32 @@ export default function Chat() {
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
-      <div className="bg-gradient-primary p-6 pt-12 rounded-b-3xl shadow-medium">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-white text-2xl font-bold mb-2">AI Chat</h1>
-            <p className="text-white/80 text-sm">Ask questions about your documents</p>
+      <div className="bg-gradient-header p-6 pt-8 shadow-large">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-white text-2xl font-bold mb-2">AI Chat</h1>
+              <p className="text-white/90 text-sm font-medium">Ask questions about your documents</p>
+            </div>
+            
+            <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+              <SelectTrigger className="w-32 h-10 bg-white/20 border-white/30 text-white rounded-xl backdrop-blur-sm">
+                <Globe className="w-4 h-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {languages.map((lang) => (
+                  <SelectItem key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
-          <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-            <SelectTrigger className="w-24 h-8 bg-white/20 border-white/20 text-white">
-              <Globe className="w-4 h-4 mr-1" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map((lang) => (
-                <SelectItem key={lang.value} value={lang.value}>
-                  {lang.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
       </div>
 
-      <div className="p-4">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Document Selector */}
         <Card className="bg-gradient-card border-0 shadow-soft mb-6">
           <CardContent className="p-4">

@@ -15,7 +15,7 @@ export function FloatingActionButton({
   return (
     <button
       className={cn(
-        "fixed bottom-20 right-4 w-14 h-14 bg-accent hover:bg-accent/90 text-accent-foreground rounded-full shadow-large transition-all duration-200 hover:scale-105 active:scale-95 z-40",
+        "fixed bottom-20 right-6 w-16 h-16 bg-gradient-header hover:shadow-large text-white rounded-2xl shadow-medium transition-all duration-300 hover:scale-105 active:scale-95 z-40 backdrop-blur-sm",
         "flex items-center justify-center",
         className
       )}
