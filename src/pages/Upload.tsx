@@ -6,7 +6,7 @@ import {
   Shield, Clock, Star, Zap, Users, Globe, Mic, Video, Image,
   FileText, FilePlus, Folder, Tag, Calendar, MapPin, Phone,
   Mail, Link, Share2, Download, Copy, Settings, Info, HelpCircle,
-  ChevronRight, ChevronDown, X, Check, AlertTriangle, Loader2
+  ChevronRight, ChevronDown, X, Check, AlertTriangle, Loader2, Scale, Heart, User, Briefcase
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,7 @@ interface UploadFile {
 const categories = [
   { name: 'Tax Documents', icon: FileText, color: 'bg-green-500', description: 'ITR, TDS certificates, receipts' },
   { name: 'Insurance', icon: Shield, color: 'bg-blue-500', description: 'Health, life, vehicle policies' },
-  { name: 'Banking', icon: '', color: 'bg-purple-500', description: 'Statements, loan documents' },
+  { name: 'Banking', icon: FileText, color: 'bg-purple-500', description: 'Statements, loan documents' },
   { name: 'Legal', icon: Scale, color: 'bg-red-500', description: 'Contracts, agreements, court papers' },
   { name: 'Medical', icon: Heart, color: 'bg-pink-500', description: 'Reports, prescriptions, bills' },
   { name: 'Identity', icon: User, color: 'bg-orange-500', description: 'Aadhaar, PAN, passport, license' },

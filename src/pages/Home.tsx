@@ -1,42 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Bell, FileText, TrendingUp, Clock, AlertCircle, Search, Filter, 
-  Upload, MessageCircle, Users, Shield, Mic, Star, ChevronRight,
-  PieChart, Calendar, Globe, Award, Lock, Zap, BookOpen, User,
-  BarChart3, Target, Heart, CreditCard, Home as HomeIcon,
-  Sparkles, Brain, Languages, Briefcase, Crown, Eye, Play,
-  Headphones, Camera, Settings, Moon, Sun, Wifi, WifiOff,
-  MapPin, Phone, Mail, Share2, Download, Copy, Trash2,
-  Plus, Minus, RotateCcw, RefreshCw, Volume2, VolumeX,
-  Maximize2, Minimize2, ExternalLink, Link, Bookmark,
-  Tag, Folder, Archive, Database, Cloud, Server, Cpu,
-  Monitor, Smartphone, Tablet, Watch, Gamepad2, Keyboard,
-  Mouse, Printer, Scanner, Webcam, Microphone, Speaker,
-  Battery, BatteryLow, Bluetooth, Usb, HardDrive, SdCard,
-  Wifi as WifiIcon, Signal, Antenna, Radio, Tv, Film,
-  Image, Video, Music, FileAudio, FileVideo, FileImage,
-  FilePlus, FileMinus, FileCheck, FileX, FileSearch,
-  FolderPlus, FolderMinus, FolderCheck, FolderX, FolderSearch,
-  ArchiveX, Package, Package2, PackageCheck, PackageX, PackageSearch,
-  ShoppingCart, ShoppingBag, CreditCard as CreditCardIcon, Banknote,
-  Coins, DollarSign, Euro, PoundSterling, Yen, IndianRupee,
-  Calculator, Receipt, Wallet, PiggyBank, TrendingDown,
-  Activity, BarChart, BarChart2, LineChart, PieChart as PieChartIcon,
-  Layers, Grid, List, Table, Columns, Rows, Square, Circle,
-  Triangle, Hexagon, Octagon, Diamond, Pentagon, Star as StarIcon,
-  Hash, AtSign, Percent, Ampersand, Asterisk, Slash, Backslash,
-  Equal, NotEqual, MoreHorizontal, MoreVertical, Menu, X,
-  Check, CheckCircle, CheckCircle2, CheckSquare, XCircle, XSquare,
-  AlertTriangle, AlertOctagon, Info, HelpCircle, QuestionMarkCircle,
-  Lightbulb, Flame, Zap as ZapIcon, Sun as SunIcon, Moon as MoonIcon,
-  CloudRain, CloudSnow, CloudLightning, Umbrella, Thermometer,
-  Wind, Compass, Navigation, Map, MapPin as MapPinIcon, Route,
-  Car, Truck, Bus, Train, Plane, Ship, Bike, Scooter, Motorcycle,
-  Fuel, Gauge, Speedometer, Timer, Stopwatch, AlarmClock, Clock as ClockIcon,
-  CalendarDays, CalendarCheck, CalendarX, CalendarPlus, CalendarMinus,
-  CalendarClock, CalendarHeart, CalendarRange, CalendarSearch, CalendarArrowDown,
-  CalendarArrowUp, CalendarFold, CalendarUnfold, CalendarSync, CalendarImport,
-  CalendarExport, CalendarCopy, CalendarEdit, CalendarView, CalendarFilter
+Bell, FileText, TrendingUp, Clock, AlertCircle, Search, Filter, 
+Upload, MessageCircle, Users, Shield, Star, ChevronRight,
+PieChart, Calendar, Award, Lock, Zap, BookOpen, User,
+BarChart3, Heart, Sparkles, Brain, Languages, Briefcase, Crown, Eye, Play,
+Headphones, Settings, Moon, Sun,
+Mail, Share2, Download, Copy, Trash2,
+Plus, RotateCcw,
+Link, Tag, Folder, Archive, Database,
+Image,
+Check, CheckCircle, Info, HelpCircle,
+Lightbulb, Calculator
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -140,7 +114,7 @@ const professionalServices = [
     rating: 4.8,
     reviews: 1247,
     category: "Financial",
-    icon: ' ',
+    icon: FileText,
     savings: "Save ₹50,000+ in taxes",
     duration: "60 min video call"
   },
@@ -152,7 +126,7 @@ const professionalServices = [
     rating: 4.9,
     reviews: 892,
     category: "Legal",
-    icon: 'Calculator',
+    icon: Calculator,
     savings: "Avoid costly mistakes",
     duration: "90 min consultation"
   },
@@ -239,7 +213,7 @@ export default function Home() {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
+          label: function(context: import('chart.js').TooltipItem<'pie'>) {
             return `${context.label}: ${context.parsed} documents`;
           }
         }
@@ -274,7 +248,7 @@ export default function Home() {
       },
       tooltip: {
         callbacks: {
-          label: function(context: any) {
+          label: function(context: import('chart.js').TooltipItem<'line'>) {
             return `${context.parsed.y} reminders in ${context.label}`;
           }
         }
@@ -379,13 +353,13 @@ export default function Home() {
             <div className="flex items-center gap-3">
               {/* Dark Mode Toggle */}
               <div className="flex items-center gap-2 bg-white/20 rounded-xl p-2">
-                <SunIcon className="w-4 h-4 text-white" />
+                <Sun className="w-4 h-4 text-white" />
                 <Switch 
                   checked={isDarkMode} 
                   onCheckedChange={setIsDarkMode}
                   className="data-[state=checked]:bg-white/30"
                 />
-                <MoonIcon className="w-4 h-4 text-white" />
+                <Moon className="w-4 h-4 text-white" />
               </div>
               
               {/* Language Toggle with Indian Flag Colors */}
@@ -438,7 +412,7 @@ export default function Home() {
                       : "text-white/70 hover:text-white hover:bg-white/20"
                   }`}
                 >
-                  <Mic className="w-5 h-5" />
+                  <Headphones className="w-5 h-5" />
                 </Button>
                 <Button
                   size="sm"
@@ -649,7 +623,7 @@ export default function Home() {
                 </div>
                 <div className="space-y-2">
                   {[
-                    { name: "Financial", count: 45, color: "bg-green-500", icon: '', trend: "+5" },
+                    { name: "Financial", count: 45, color: "bg-green-500", icon: FileText, trend: "+5" },
                     { name: "Identity", count: 32, color: "bg-blue-500", icon: User, trend: "+2" },
                     { name: "Insurance", count: 28, color: "bg-amber-500", icon: Shield, trend: "+1" },
                     { name: "Medical", count: 24, color: "bg-red-500", icon: Heart, trend: "+3" }
