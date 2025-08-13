@@ -140,7 +140,7 @@ const professionalServices = [
     rating: 4.8,
     reviews: 1247,
     category: "Financial",
-    icon: Calculator,
+    icon: ' ',
     savings: "Save ₹50,000+ in taxes",
     duration: "60 min video call"
   },
@@ -152,7 +152,7 @@ const professionalServices = [
     rating: 4.9,
     reviews: 892,
     category: "Legal",
-    icon: Calculator,
+    icon: 'Calculator',
     savings: "Avoid costly mistakes",
     duration: "90 min consultation"
   },
