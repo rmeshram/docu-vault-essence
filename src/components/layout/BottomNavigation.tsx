@@ -1,4 +1,4 @@
-import { Home, Folder, Upload, Search, User } from "lucide-react";
+import { Home, Folder, Upload, Search, User, MessageSquare } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,7 @@ const navigationItems = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/categories", icon: Folder, label: "Categories" },
   { href: "/upload", icon: Upload, label: "Upload" },
+  { href: "/chat", icon: Upload, label: "chat" },
   { href: "/search", icon: Search, label: "Search" },
   { href: "/profile", icon: User, label: "Profile" },
 ];

@@ -6,7 +6,8 @@ import {
   ThumbsUp, ThumbsDown, RefreshCw, Settings, HelpCircle,
   User, Bot, Clock, CheckCircle, AlertCircle, Info, Star,
   Headphones, Play, Pause, SkipForward, SkipBack, Repeat,
-  Shuffle, Heart, Share2, ExternalLink, Link, Tag, Folder
+  Shuffle, Heart, Share2, ExternalLink, Link, Tag, Folder, X,
+  ArrowRight, Users
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -302,72 +303,193 @@ export default function Chat() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
-      {/* Enhanced Header */}
+    <div className="min-h-[calc(100vh-64px)] bg-background pb-32">
+      {/* Enhanced Premium Header with Cultural Elements */}
       <div className="bg-gradient-header p-6 pt-8 shadow-large relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-accent opacity-20"></div>
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-indigo-500/20 to-pink-500/20 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2"></div>
+          <div className="absolute inset-0 bg-gradient-accent opacity-10 backdrop-blur-sm"></div>
+          {/* Indian Pattern Overlay */}
+          <div className="absolute inset-0 opacity-5 bg-[url('/patterns/indian-pattern.svg')] bg-repeat"></div>
+        </div>
+        
         <div className="max-w-7xl mx-auto relative">
           <div className="flex items-center justify-between mb-4">
-            <div>
+            <div className="relative">
+              <div className="absolute -top-6 -left-6 w-24 h-24 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl"></div>
               <h1 className="text-white text-3xl font-bold mb-2 tracking-tight flex items-center">
-                <Sparkles className="w-8 h-8 mr-3" />
-                AI Chat
+                <div className="relative mr-4">
+                  <div className="absolute inset-0 bg-white/20 rounded-xl blur animate-pulse"></div>
+                  <Sparkles className="w-8 h-8 relative z-10" />
+                </div>
+                AI Assistant
+                <Badge className="ml-3 bg-white/20 text-white border-white/30 text-xs">
+                  <Brain className="w-3 h-3 mr-1" />
+                  GPT-4 Turbo
+                </Badge>
               </h1>
-              <p className="text-white/90 text-base font-medium">Intelligent conversations about your documents in 15+ languages</p>
+              <p className="text-white/90 text-base font-medium flex items-center gap-2">
+                Intelligent conversations in 15+ languages
+                <Badge className="bg-orange-500/20 text-white border-orange-500/30">
+                  <Globe className="w-3 h-3 mr-1" />
+                  DigiLocker Integrated
+                </Badge>
+              </p>
               {uploadedDocuments.length > 0 && (
-                <p className="text-white/70 text-sm mt-1">
-                  {uploadedDocuments.length} document(s) • Ready for AI analysis
-                </p>
+                <div className="flex items-center gap-3 mt-2">
+                  <Badge className="bg-success/20 text-white border-success/30">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    {uploadedDocuments.length} Documents Ready
+                  </Badge>
+                  <Badge className="bg-primary/20 text-white border-primary/30">
+                    <Brain className="w-3 h-3 mr-1" />
+                    AI Analysis Active
+                  </Badge>
+                  <Badge className="bg-warning/20 text-white border-warning/30">
+                    <Clock className="w-3 h-3 mr-1" />
+                    Real-time Processing
+                  </Badge>
+                </div>
               )}
-            </div>
             
             <div className="flex items-center gap-3">
-              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                <SelectTrigger className="w-40 h-10 bg-white/20 border-white/30 text-white rounded-xl backdrop-blur-sm">
-                  <Globe className="w-4 h-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {languages.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      <span className="flex items-center gap-2">
-                        <span>{lang.flag}</span>
-                        <span>{lang.label}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* Enhanced Language Selector with Cultural Context */}
+              <div className="relative group">
+                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                  <SelectTrigger className="w-48 h-10 bg-white/20 border-white/30 text-white rounded-xl backdrop-blur-sm group-hover:bg-white/30 transition-all duration-300">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      <span>Language</span>
+                      <Badge className="bg-orange-500/20 text-white text-xs ml-auto">15+</Badge>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <div className="p-2 mb-2 border-b">
+                      <p className="text-xs text-muted-foreground">Regional Languages</p>
+                    </div>
+                    {languages.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">{lang.flag}</span>
+                          <div>
+                            <span className="font-medium">{lang.label}</span>
+                            {lang.value === selectedLanguage && (
+                              <Badge className="ml-2 bg-success/20 text-success text-xs">Active</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                <Settings className="w-4 h-4" />
-              </Button>
+              {/* Enhanced Controls */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-10 px-4 bg-white/20 text-white hover:bg-white/30 rounded-xl backdrop-blur-sm"
+                >
+                  <Users className="w-4 h-4 mr-2" />
+                  Family Mode
+                  <Badge className="ml-2 bg-success/20 text-white text-xs">5</Badge>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-10 w-10 bg-white/20 text-white hover:bg-white/30 rounded-xl backdrop-blur-sm"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
-          {/* AI Features Toggle */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/10 rounded-2xl p-4 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Volume2 className="w-4 h-4 text-white" />
-                <span className="text-white text-sm">Voice</span>
+          {/* Enhanced AI Features Dashboard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Voice & Translation Controls */}
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Volume2 className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white text-sm font-medium">Voice AI</span>
+                    <p className="text-white/70 text-xs">Multi-lingual input</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={voiceEnabled} 
+                  onCheckedChange={setVoiceEnabled}
+                  className="data-[state=checked]:bg-success"
+                />
               </div>
-              <Switch checked={voiceEnabled} onCheckedChange={setVoiceEnabled} />
+              <Progress value={75} className="h-1 bg-white/10" />
+              <p className="text-white/60 text-xs mt-2">75% accuracy in Hindi</p>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Languages className="w-4 h-4 text-white" />
-                <span className="text-white text-sm">Translate</span>
+
+            {/* Translation Features */}
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Languages className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white text-sm font-medium">Auto-Translate</span>
+                    <p className="text-white/70 text-xs">Real-time translation</p>
+                  </div>
+                </div>
+                <Switch 
+                  checked={autoTranslate} 
+                  onCheckedChange={setAutoTranslate}
+                  className="data-[state=checked]:bg-success"
+                />
               </div>
-              <Switch checked={autoTranslate} onCheckedChange={setAutoTranslate} />
+              <div className="flex items-center gap-2 mt-2">
+                {["🇮🇳", "🇺🇸", "🇬🇧"].map((flag, i) => (
+                  <Badge key={i} className="bg-white/20 border-0">{flag}</Badge>
+                ))}
+                <Badge className="bg-primary/20 text-white text-xs">+12 more</Badge>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-white text-lg font-bold">{messages.length}</p>
-              <p className="text-white/80 text-xs">Messages</p>
+
+            {/* Chat Analytics */}
+            <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-white text-lg font-bold">{messages.length}</p>
+                  <p className="text-white/70 text-xs">Total Messages</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-white/60">
+                <span>Response time: 2.3s</span>
+                <span>Accuracy: 96%</span>
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-white text-lg font-bold">142</p>
-              <p className="text-white/80 text-xs">AI Queries Left</p>
+
+            {/* Premium Features */}
+            <div className="bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl p-4 backdrop-blur-sm border border-white/20 hover:shadow-glow transition-all duration-300 group">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-white text-lg font-bold">142</p>
+                  <p className="text-white/70 text-xs">AI Queries Left</p>
+                </div>
+              </div>
+              <Button variant="ghost" className="w-full justify-between text-xs text-white hover:bg-white/20 group-hover:bg-white/20">
+                Upgrade to Premium
+                <ArrowRight className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -661,8 +783,8 @@ export default function Chat() {
       </div>
 
       {/* Enhanced Input Area */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
-        <div className="max-w-7xl mx-auto">
+      <div className="fixed bottom-[72px] left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+        <div className="max-w-7xl w-full mx-auto px-4">
           {/* Voice Recognition Indicator */}
           {isListening && (
             <div className="mb-4 p-3 bg-primary/10 rounded-xl border border-primary/20">
@@ -721,14 +843,15 @@ export default function Chat() {
                 }
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => {
+                onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
                 }}
                 disabled={uploadedDocuments.length === 0}
-                className="min-h-[60px] max-h-[120px] rounded-2xl border-2 border-border focus:border-primary text-base shadow-soft resize-none pr-16"
+                autoFocus
+                className="w-full min-h-[60px] max-h-[120px] rounded-2xl border-2 border-border focus:border-primary focus:ring-2 focus:ring-primary/20 text-base shadow-soft resize-none pr-16"
               />
               
               <div className="absolute right-3 bottom-3 flex items-center gap-2">
@@ -785,6 +908,8 @@ export default function Chat() {
           </div>
         </div>
       </div>
-    </div>
+                </div>
+      </div>
   );
 }
+

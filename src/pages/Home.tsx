@@ -755,32 +755,93 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentDocuments.map((doc) => (
-              <Card key={doc.id} className="bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer group hover:scale-[1.02]">
+              <Card key={doc.id} className="bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer group hover:scale-[1.02] relative">
+                {/* Version Badge */}
+                {doc.versions > 1 && (
+                  <div className="absolute -top-1 -left-1 bg-primary text-white text-xs px-2 py-1 rounded-br-xl rounded-tl-xl z-10 flex items-center gap-1">
+                    <RotateCcw className="w-3 h-3" />
+                    v{doc.versions}
+                  </div>
+                )}
+                
                 <CardContent className="p-5">
                   <div className="w-full h-32 bg-muted rounded-xl mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
                     <FileText className="w-12 h-12 text-primary" />
                     <Badge className="absolute top-2 right-2 text-xs bg-primary/20 text-primary">
                       {doc.category}
                     </Badge>
-                    {doc.category === "Identity" && (
-                      <div className="absolute bottom-2 left-2 flex gap-1">
+                    
+                    {/* Enhanced Document Info */}
+                    <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+                      {doc.category === "Identity" && (
                         <Badge className="bg-orange-500/20 text-orange-600 text-xs">Aadhaar</Badge>
-                      </div>
-                    )}
+                      )}
+                      {doc.duplicates > 0 && (
+                        <Badge className="bg-warning/20 text-warning text-xs flex items-center gap-1">
+                          <Copy className="w-3 h-3" />
+                          {doc.duplicates} Similar
+                        </Badge>
+                      )}
+                      {doc.blockchain && (
+                        <Badge className="bg-success/20 text-success text-xs flex items-center gap-1">
+                          <Link className="w-3 h-3" />
+                          Verified
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
                   <h3 className="font-semibold text-sm text-foreground mb-2 truncate">{doc.title}</h3>
                   <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{doc.aiSummary}</p>
+                  
+                  {/* Document Relationships */}
+                  {doc.relationships && (
+                    <div className="mb-3 flex items-center gap-2">
+                      <Badge className="bg-primary/10 text-primary text-xs flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        Linked to {doc.relationships}
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Document Metadata */}
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                    <span>{doc.date}</span>
-                    <span>{doc.size}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{doc.date}</span>
+                      <span>•</span>
+                      <span>{doc.size}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {doc.autoFolders?.map((folder, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px]">
+                          <Folder className="w-3 h-3 mr-1" />
+                          {folder}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
+                  
+                  {/* Action Buttons */}
                   <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-xs">
-                      {doc.type}
-                    </Badge>
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
-                      <MessageCircle className="w-3 h-3" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="secondary" className="text-xs">
+                        {doc.type}
+                      </Badge>
+                      {doc.tags?.map((tag, i) => (
+                        <Badge key={i} variant="outline" className="text-[10px]">
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
+                        <MessageCircle className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
+                        <Share2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1139,27 +1200,56 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-white/80 text-sm">
-                    <Badge className="bg-success/20 text-white border-success/30">
-                      <TrendingUp className="w-3 h-3 mr-1" />
-                      825% CAGR
+                    <Badge className="bg-success/20 text-white border-success/30 hover:bg-success/30 transition-colors">
+                      <TrendingUp className="w-3 h-3 mr-1 text-success" />
+                      <span className="text-success font-semibold">825% CAGR</span>
                     </Badge>
-                    <Badge className="bg-primary/20 text-white border-primary/30">
-                      <Users className="w-3 h-3 mr-1" />
-                      6M+ Users
+                    <Badge className="bg-yellow-400/20 text-yellow-200 border-yellow-400/30 hover:bg-yellow-400/30 transition-colors">
+                      <Users className="w-3 h-3 mr-1 text-yellow-300" />
+                      <span className="text-yellow-200 font-semibold">6M+ Users</span>
                     </Badge>
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm mb-6">
+                  {/* Enhanced Premium Value Proposition */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20">
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <TrendingUp className="w-5 h-5 text-success" />
+                      </div>
+                      <p className="text-2xl font-bold text-success">₹89,400</p>
+                      <p className="text-xs text-white/70">Average Annual ROI</p>
+                    </div>
+                    <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20">
+                      <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mx-auto mb-2">
+                        <Shield className="w-5 h-5 text-yellow-300" />
+                      </div>
+                      <p className="text-2xl font-bold text-yellow-300">200GB</p>
+                      <p className="text-xs text-white/70">Family Storage</p>
+                    </div>
+                  </div>
+                  
+                  {/* Premium Pricing Card */}
+                  <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm mb-6 border border-white/20">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <span className="text-2xl line-through text-white/60">₹299</span>
                       <span className="text-4xl font-bold">₹149</span>
+                      <Badge className="bg-yellow-500/20 text-yellow-200 border-yellow-300/30">50% OFF</Badge>
                     </div>
                     <p className="text-white/80 text-sm mb-4">/month • Save ₹1,800/year</p>
                     <div className="space-y-2 text-xs text-white/70">
-                      <p>✓ ROI: Save ₹89,400 annually</p>
-                      <p>✓ 30-day money-back guarantee</p>
-                      <p>✓ Cancel anytime</p>
+                      <p className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-success" />
+                        ROI: Save ₹89,400 annually
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-success" />
+                        30-day money-back guarantee
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <RotateCcw className="w-4 h-4 text-success" />
+                        Cancel anytime
+                      </p>
                     </div>
                   </div>
                   <Button className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 py-3 shadow-large">

@@ -15,7 +15,6 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -25,23 +24,26 @@ const App = () => (
         <div className="min-h-screen bg-background flex">
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="*" element={
-              <div className="flex w-full">
-                <Sidebar />
-                <main className="flex-1 overflow-auto">
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/upload" element={<Upload />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/search" element={<Search />} />
-                    <Route path="/chat" element={<Chat />} />
-                    <Route path="/document/:id" element={<DocumentDetail />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            } />
+            <Route
+              path="/*"
+              element={
+                <div className="flex w-full">
+                  <Sidebar />
+                  <div className="flex-1">
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="upload" element={<Upload />} />
+                      <Route path="categories" element={<Categories />} />
+                      <Route path="search" element={<Search />} />
+                      <Route path="chat" element={<Chat />} />
+                      <Route path="document/:id" element={<DocumentDetail />} />
+                      <Route path="profile" element={<Profile />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </div>
+              }
+            />
           </Routes>
         </div>
       </BrowserRouter>
