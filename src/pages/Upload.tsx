@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Camera, Upload as UploadIcon, File, CheckCircle, AlertCircle, RotateCcw, Trash2, Eye, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Camera, Upload as UploadIcon, File, CheckCircle, AlertCircle, RotateCcw, Trash2, Eye, Plus, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useUploadStore } from "@/store/uploadStore";
 
 type FileStatus = 'queued' | 'uploading' | 'uploaded' | 'analyzed' | 'failed' | 'analysis-failed';
 
@@ -29,6 +31,8 @@ export default function Upload() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const addDocument = useUploadStore((state) => state.addDocument);
 
   const getStatusIcon = (status: FileStatus) => {
     switch (status) {
@@ -117,14 +121,38 @@ export default function Upload() {
               
               // Simulate AI analysis after upload
               setTimeout(() => {
-                const mockText = `This document contains important information. Analysis complete for ${file.name}.`;
-                setFiles(prev => prev.map(f => 
-                  f.id === fileId ? { 
-                    ...f, 
-                    status: 'analyzed' as FileStatus,
-                    extractedText: mockText
-                  } : f
-                ));
+                const currentFile = files.find(f => f.id === fileId);
+                if (currentFile) {
+                  const mockText = `This document contains important information about ${currentFile.name.split('.')[0]}. The AI has successfully analyzed the content and identified key information including dates, amounts, and relevant details. You can now ask questions about this document in the chat.`;
+                  
+                  setFiles(prev => prev.map(f => 
+                    f.id === fileId ? { 
+                      ...f, 
+                      status: 'analyzed' as FileStatus,
+                      extractedText: mockText
+                    } : f
+                  ));
+
+                  // Add to global store for chat access
+                  addDocument({
+                    id: fileId,
+                    name: currentFile.name,
+                    size: currentFile.size,
+                    type: currentFile.name.split('.').pop()?.toUpperCase() || 'Unknown',
+                    extractedText: mockText,
+                    uploadedAt: new Date(),
+                  });
+
+                  toast({
+                    title: "Document analyzed!",
+                    description: `${currentFile.name} is ready for AI chat. You can now ask questions about it.`,
+                    action: (
+                      <Button size="sm" onClick={() => navigate('/chat')}>
+                        Chat Now
+                      </Button>
+                    ),
+                  });
+                }
               }, 2000);
             }, 500);
           }
@@ -179,10 +207,11 @@ export default function Upload() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-gradient-header p-6 pt-8 shadow-large">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-white text-2xl font-bold mb-2">Upload Documents</h1>
-          <p className="text-white/90 text-sm font-medium">Add documents for AI analysis and organization</p>
+      <div className="bg-gradient-header p-6 pt-8 shadow-large relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-accent opacity-20"></div>
+        <div className="max-w-7xl mx-auto relative">
+          <h1 className="text-white text-3xl font-bold mb-2 tracking-tight">Upload Documents</h1>
+          <p className="text-white/90 text-base font-medium">Add documents for AI analysis and intelligent organization</p>
         </div>
       </div>
 
@@ -192,10 +221,10 @@ export default function Upload() {
           <h2 className="text-2xl font-bold text-foreground mb-6">Upload Documents</h2>
           
           <div
-            className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-200 cursor-pointer ${
+            className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all duration-300 cursor-pointer ${
               isDragOver 
-                ? 'border-primary bg-primary/5 scale-105' 
-                : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                ? 'border-primary bg-gradient-primary/10 scale-[1.02] shadow-glow' 
+                : 'border-border hover:border-primary/60 hover:bg-gradient-primary/5 hover:shadow-medium'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -203,16 +232,16 @@ export default function Upload() {
             onClick={openFileSelector}
           >
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <UploadIcon className="w-8 h-8 text-primary" />
+              <div className="w-20 h-20 bg-gradient-primary rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-soft">
+                <UploadIcon className="w-10 h-10 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-2">
+              <h3 className="text-2xl font-bold text-foreground mb-3 tracking-tight">
                 {isDragOver ? 'Drop files here' : 'Drag & drop files'}
               </h3>
-              <p className="text-muted-foreground mb-4">
-                or <span className="text-primary font-medium">click to browse</span>
+              <p className="text-muted-foreground mb-6 text-lg">
+                or <span className="text-primary font-semibold bg-gradient-primary bg-clip-text text-transparent">click to browse</span>
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground bg-muted/50 px-4 py-2 rounded-full inline-block">
                 Supports PDF, JPG, PNG up to 10MB each
               </p>
             </div>
@@ -230,24 +259,28 @@ export default function Upload() {
 
         {/* Alternative Upload Methods */}
         <section>
-          <h3 className="text-lg font-bold text-foreground mb-4">Other Upload Options</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-gradient-card border-0 shadow-soft cursor-pointer hover:shadow-medium transition-all duration-200">
-              <CardContent className="p-6 text-center">
-                <Camera className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h4 className="font-semibold text-sm mb-1">Camera Scan</h4>
-                <p className="text-xs text-muted-foreground">Take photo of documents</p>
+          <h3 className="text-xl font-bold text-foreground mb-6">Other Upload Options</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-card border-0 shadow-elegant cursor-pointer hover:shadow-large hover:scale-[1.02] transition-all duration-300 group">
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-glow transition-all duration-300">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="font-bold text-base mb-2">Camera Scan</h4>
+                <p className="text-sm text-muted-foreground">Take photo of documents</p>
               </CardContent>
             </Card>
             
             <Card 
-              className="bg-gradient-card border-0 shadow-soft cursor-pointer hover:shadow-medium transition-all duration-200"
+              className="bg-gradient-card border-0 shadow-elegant cursor-pointer hover:shadow-large hover:scale-[1.02] transition-all duration-300 group"
               onClick={openFileSelector}
             >
-              <CardContent className="p-6 text-center">
-                <File className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h4 className="font-semibold text-sm mb-1">File Browser</h4>
-                <p className="text-xs text-muted-foreground">Choose files from device</p>
+              <CardContent className="p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-accent rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:shadow-glow transition-all duration-300">
+                  <File className="w-8 h-8 text-white" />
+                </div>
+                <h4 className="font-bold text-base mb-2">File Browser</h4>
+                <p className="text-sm text-muted-foreground">Choose files from device</p>
               </CardContent>
             </Card>
           </div>
@@ -256,10 +289,10 @@ export default function Upload() {
         {/* File Queue */}
         {files.length > 0 && (
           <section>
-            <h3 className="text-lg font-bold text-foreground mb-4">Upload Queue ({files.length})</h3>
-            <div className="space-y-4">
+            <h3 className="text-xl font-bold text-foreground mb-6">Upload Queue ({files.length})</h3>
+            <div className="space-y-6">
               {files.map((file) => (
-                <Card key={file.id} className="bg-gradient-card border-0 shadow-soft">
+                <Card key={file.id} className="bg-gradient-card border-0 shadow-elegant hover:shadow-large transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       {getStatusIcon(file.status)}
@@ -268,10 +301,20 @@ export default function Upload() {
                           <h4 className="font-semibold text-foreground truncate">{file.name}</h4>
                           <div className="flex items-center gap-2">
                             {file.status === 'analyzed' && (
-                              <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                AI Analyzed
-                              </Badge>
+                              <>
+                                <Badge variant="secondary" className="bg-success/10 text-success border-success/20">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  AI Analyzed
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  onClick={() => navigate('/chat')}
+                                  className="h-8 px-3 text-xs bg-gradient-primary hover:shadow-medium transition-all duration-200"
+                                >
+                                  <MessageCircle className="w-3 h-3 mr-1" />
+                                  Ask AI
+                                </Button>
+                              </>
                             )}
                             {file.status === 'failed' && (
                               <Button

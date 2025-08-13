@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Send, Mic, Globe, FileText, Download, Share, Eye } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Send, Mic, Globe, FileText, Download, Share, Eye, Sparkles, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useUploadStore } from "@/store/uploadStore";
 
 interface Message {
   id: string;
@@ -52,6 +53,8 @@ export default function Chat() {
   const [selectedDocument, setSelectedDocument] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const uploadedDocuments = useUploadStore((state) => state.uploadedDocuments);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
@@ -65,17 +68,54 @@ export default function Chat() {
 
     setMessages(prev => [...prev, newMessage]);
     setInputMessage('');
+    setIsTyping(true);
 
-    // Mock AI response
+    // Enhanced AI response based on uploaded documents
     setTimeout(() => {
+      let aiContent = 'I understand your question. ';
+      let relatedDocs: Array<{id: string; title: string; type: string}> = [];
+
+      if (uploadedDocuments.length > 0) {
+        // Find relevant documents based on user question
+        const relevantDocs = uploadedDocuments.filter(doc => 
+          selectedDocument === 'all' || selectedDocument === '' || doc.id === selectedDocument
+        );
+
+        if (relevantDocs.length > 0) {
+          aiContent = `Based on your uploaded documents, I can help you with that. I've analyzed ${relevantDocs.length} document(s) and found relevant information. Here's what I found: `;
+          
+          // Add some contextual response based on the document content
+          if (inputMessage.toLowerCase().includes('expense') || inputMessage.toLowerCase().includes('cost')) {
+            aiContent += 'I can see various expenses and amounts in your documents. ';
+          } else if (inputMessage.toLowerCase().includes('date') || inputMessage.toLowerCase().includes('when')) {
+            aiContent += 'I found several important dates in your documents. ';
+          } else {
+            aiContent += 'Let me search through the document content for the information you need. ';
+          }
+
+          relatedDocs = relevantDocs.slice(0, 3).map(doc => ({
+            id: doc.id,
+            title: doc.name,
+            type: doc.type
+          }));
+        } else {
+          aiContent += 'However, I don\'t see any uploaded documents that are relevant to your question. Please upload some documents first and I\'ll be able to help you better.';
+        }
+      } else {
+        aiContent += 'I notice you haven\'t uploaded any documents yet. Please upload some documents first so I can analyze them and provide specific answers to your questions.';
+      }
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: 'I understand your question. Let me analyze your documents and provide you with the information you need.',
+        content: aiContent,
         timestamp: new Date(),
+        documents: relatedDocs.length > 0 ? relatedDocs : undefined,
       };
+      
+      setIsTyping(false);
       setMessages(prev => [...prev, aiResponse]);
-    }, 1000);
+    }, 1500);
   };
 
   const handleVoiceInput = () => {
@@ -86,12 +126,21 @@ export default function Chat() {
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* Header */}
-      <div className="bg-gradient-header p-6 pt-8 shadow-large">
-        <div className="max-w-7xl mx-auto">
+      <div className="bg-gradient-header p-6 pt-8 shadow-large relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-accent opacity-20"></div>
+        <div className="max-w-7xl mx-auto relative">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-white text-2xl font-bold mb-2">AI Chat</h1>
-              <p className="text-white/90 text-sm font-medium">Ask questions about your documents</p>
+              <h1 className="text-white text-3xl font-bold mb-2 tracking-tight flex items-center">
+                <Sparkles className="w-8 h-8 mr-3" />
+                AI Chat
+              </h1>
+              <p className="text-white/90 text-base font-medium">Ask intelligent questions about your documents</p>
+              {uploadedDocuments.length > 0 && (
+                <p className="text-white/70 text-sm mt-1">
+                  {uploadedDocuments.length} document(s) available for analysis
+                </p>
+              )}
             </div>
             
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
@@ -113,19 +162,28 @@ export default function Chat() {
 
       <div className="max-w-7xl mx-auto p-6">
         {/* Document Selector */}
-        <Card className="bg-gradient-card border-0 shadow-soft mb-6">
-          <CardContent className="p-4">
-            <label className="text-sm font-medium mb-2 block">Ask about specific document (optional)</label>
+        <Card className="bg-gradient-card border-0 shadow-elegant mb-6">
+          <CardContent className="p-6">
+            <label className="text-base font-semibold mb-3 block flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-primary" />
+              Ask about specific document (optional)
+            </label>
             <Select value={selectedDocument} onValueChange={setSelectedDocument}>
-              <SelectTrigger className="h-9 rounded-lg">
+              <SelectTrigger className="h-12 rounded-xl border-2 border-border">
                 <SelectValue placeholder="All documents" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Documents</SelectItem>
-                <SelectItem value="tax-2024">Tax Return 2024</SelectItem>
-                <SelectItem value="insurance">Insurance Policies</SelectItem>
-                <SelectItem value="medical">Medical Records</SelectItem>
-                <SelectItem value="banking">Bank Statements</SelectItem>
+                <SelectItem value="all">All Documents ({uploadedDocuments.length})</SelectItem>
+                {uploadedDocuments.map((doc) => (
+                  <SelectItem key={doc.id} value={doc.id}>
+                    {doc.name}
+                  </SelectItem>
+                ))}
+                {uploadedDocuments.length === 0 && (
+                  <SelectItem value="none" disabled>
+                    No documents uploaded yet
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
           </CardContent>
@@ -141,49 +199,51 @@ export default function Chat() {
               <div className={`flex items-start gap-3 max-w-[80%] ${
                 message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
               }`}>
-                <Avatar className="w-8 h-8 flex-shrink-0">
+                <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-white/20">
                   <AvatarFallback className={
                     message.type === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'bg-secondary text-secondary-foreground'
+                      ? 'bg-gradient-primary text-white font-bold' 
+                      : 'bg-gradient-accent text-white font-bold'
                   }>
                     {message.type === 'user' ? 'U' : 'AI'}
                   </AvatarFallback>
                 </Avatar>
                 
                 <div className={`space-y-2 ${message.type === 'user' ? 'items-end' : 'items-start'}`}>
-                  <Card className={`border-0 shadow-soft ${
+                  <Card className={`border-0 shadow-elegant ${
                     message.type === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
+                      ? 'bg-gradient-primary text-white' 
                       : 'bg-gradient-card'
                   }`}>
-                    <CardContent className="p-3">
-                      <p className="text-sm">{message.content}</p>
+                    <CardContent className="p-4">
+                      <p className="text-sm leading-relaxed">{message.content}</p>
                     </CardContent>
                   </Card>
                   
                   {message.documents && (
-                    <div className="space-y-2 w-full">
+                    <div className="space-y-3 w-full">
                       {message.documents.map((doc) => (
-                        <Card key={doc.id} className="bg-background border shadow-soft">
-                          <CardContent className="p-3">
+                        <Card key={doc.id} className="bg-gradient-card border-0 shadow-elegant hover:shadow-large transition-all duration-300">
+                          <CardContent className="p-4">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-primary" />
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center">
+                                  <FileText className="w-5 h-5 text-white" />
+                                </div>
                                 <div>
-                                  <p className="text-sm font-medium">{doc.title}</p>
+                                  <p className="text-sm font-semibold">{doc.title}</p>
                                   <p className="text-xs text-muted-foreground">{doc.type}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                                  <Eye className="w-3 h-3" />
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
+                                  <Eye className="w-4 h-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                                  <Download className="w-3 h-3" />
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
+                                  <Download className="w-4 h-4" />
                                 </Button>
-                                <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                                  <Share className="w-3 h-3" />
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10">
+                                  <Share className="w-4 h-4" />
                                 </Button>
                               </div>
                             </div>
@@ -200,38 +260,68 @@ export default function Chat() {
               </div>
             </div>
           ))}
+          
+          {/* Typing Indicator */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="flex items-start gap-3 max-w-[80%]">
+                <Avatar className="w-10 h-10 flex-shrink-0 border-2 border-white/20">
+                  <AvatarFallback className="bg-gradient-accent text-white font-bold">
+                    AI
+                  </AvatarFallback>
+                </Avatar>
+                <Card className="bg-gradient-card border-0 shadow-elegant">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="fixed bottom-16 left-0 right-0 p-4 bg-background border-t border-border">
-        <div className="flex items-end gap-2">
-          <div className="flex-1 relative">
-            <Input
-              placeholder="Ask AI about your documents..."
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="pr-10 rounded-xl border-2"
-            />
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleVoiceInput}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 rounded-lg ${
-                isVoiceActive ? "bg-accent text-accent-foreground" : ""
-              }`}
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-background/95 backdrop-blur-sm border-t border-border">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-end gap-3">
+            <div className="flex-1 relative">
+              <Input
+                placeholder={uploadedDocuments.length > 0 ? "Ask AI about your documents..." : "Upload documents first to start chatting..."}
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                disabled={uploadedDocuments.length === 0}
+                className="pr-12 h-12 rounded-2xl border-2 border-border focus:border-primary text-base shadow-soft"
+              />
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleVoiceInput}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 rounded-xl transition-all duration-200 ${
+                  isVoiceActive ? "bg-gradient-primary text-white shadow-glow" : "hover:bg-primary/10"
+                }`}
+              >
+                <Mic className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button 
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || uploadedDocuments.length === 0}
+              className="h-12 w-12 p-0 rounded-2xl bg-gradient-primary hover:shadow-glow transition-all duration-300 disabled:bg-muted disabled:text-muted-foreground"
             >
-              <Mic className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </Button>
           </div>
-          <Button 
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim()}
-            className="h-10 w-10 p-0 rounded-xl bg-accent hover:bg-accent/90"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          {uploadedDocuments.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+              Please upload some documents first to start asking questions
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -8,56 +8,60 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* DocuVault AI Design System - Professional Light Theme (Original) */
-    --background: 0 0% 100%; /* Pure White #FFFFFF */
-    --foreground: 0 0% 23%; /* Slate Grey #3A3A3A */
+    /* DocuVault AI Design System - Elegant Purple Theme with Material Design 3 */
+    --background: 0 0% 99%; /* Soft White #FCFCFC */
+    --foreground: 260 8% 14%; /* Deep Purple Grey #1E1B2E */
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 23%;
+    --card-foreground: 260 8% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 23%;
+    --popover-foreground: 260 8% 14%;
 
-    /* Primary: Cool Light Blue #E6F0FA */
-    --primary: 213 100% 94%; /* #E6F0FA */
-    --primary-foreground: 0 0% 23%;
+    /* Primary: Royal Purple #7C3AED */
+    --primary: 262 83% 58%; /* #7C3AED */
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Muted Teal #C6E4E7 */
-    --secondary: 186 33% 84%; /* #C6E4E7 */
-    --secondary-foreground: 0 0% 23%;
+    /* Secondary: Lavender Purple #E4D4F4 */
+    --secondary: 266 44% 91%; /* #E4D4F4 */
+    --secondary-foreground: 260 8% 14%;
 
-    /* Accent: Soft Coral #F9A88F */
-    --accent: 16 85% 76%; /* #F9A88F */
-    --accent-foreground: 0 0% 23%;
+    /* Accent: Vibrant Purple #A855F7 */
+    --accent: 262 80% 64%; /* #A855F7 */
+    --accent-foreground: 0 0% 100%;
 
-    --muted: 213 27% 96%;
-    --muted-foreground: 215 13% 65%;
+    --muted: 264 40% 96%;
+    --muted-foreground: 264 15% 55%;
 
-    /* Success: Soft Green #A6D8A8 */
-    --success: 123 25% 76%; /* #A6D8A8 */
-    --success-foreground: 0 0% 23%;
+    /* Success: Emerald Green #10B981 */
+    --success: 158 64% 52%; /* #10B981 */
+    --success-foreground: 0 0% 100%;
 
-    /* Warning: Light Amber #FDDFA3 */
-    --warning: 48 94% 81%; /* #FDDFA3 */
-    --warning-foreground: 0 0% 23%;
+    /* Warning: Amber #F59E0B */
+    --warning: 45 93% 47%; /* #F59E0B */
+    --warning-foreground: 0 0% 100%;
 
-    /* Error: Light Rose Red #F8B7B7 */
-    --destructive: 0 65% 84%; /* #F8B7B7 */
-    --destructive-foreground: 0 0% 23%;
+    /* Error: Rose Red #EF4444 */
+    --destructive: 0 84% 60%; /* #EF4444 */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 213 27% 92%;
-    --input: 213 27% 92%;
-    --ring: 213 100% 94%;
+    --border: 264 40% 90%;
+    --input: 264 40% 94%;
+    --ring: 262 83% 58%;
 
-    /* Gradients - Subtle Light Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(213 27% 98%));
-    --gradient-header: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    /* Gradients - Rich Purple Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(270 75% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(266 44% 91%), hsl(272 35% 85%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(264 40% 98%));
+    --gradient-header: linear-gradient(135deg, hsl(262 83% 58%), hsl(270 75% 65%));
+    --gradient-accent: linear-gradient(135deg, hsl(262 80% 64%), hsl(277 85% 70%));
     
-    /* Shadows - Ultra Soft */
-    --shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
-    --shadow-medium: 0 2px 6px 0 hsl(0 0% 0% / 0.07);
-    --shadow-large: 0 4px 12px 0 hsl(0 0% 0% / 0.09);
+    /* Shadows - Modern Material Design 3 */
+    --shadow-soft: 0 1px 3px 0 hsl(262 83% 58% / 0.12), 0 1px 2px 0 hsl(262 83% 58% / 0.06);
+    --shadow-medium: 0 4px 6px -1px hsl(262 83% 58% / 0.15), 0 2px 4px -1px hsl(262 83% 58% / 0.08);
+    --shadow-large: 0 10px 15px -3px hsl(262 83% 58% / 0.18), 0 4px 6px -2px hsl(262 83% 58% / 0.10);
+    --shadow-elegant: 0 20px 25px -5px hsl(262 83% 58% / 0.12), 0 10px 10px -5px hsl(262 83% 58% / 0.04);
+    --shadow-glow: 0 0 40px hsl(262 80% 64% / 0.3);
 
     --radius: 1rem;
 
@@ -79,48 +83,52 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Keep light theme for dark mode - no dark backgrounds */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 23%;
+    /* Dark mode with deep purple background */
+    --background: 260 15% 8%; /* Deep Purple Black #0F0D15 */
+    --foreground: 0 0% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 23%;
+    --card: 260 15% 10%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 23%;
+    --popover: 260 15% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 213 100% 94%;
-    --primary-foreground: 0 0% 23%;
+    --primary: 262 80% 64%; /* #A855F7 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 186 33% 84%;
-    --secondary-foreground: 0 0% 23%;
+    --secondary: 264 30% 18%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 213 27% 96%;
-    --muted-foreground: 215 13% 65%;
+    --muted: 264 20% 14%;
+    --muted-foreground: 264 15% 65%;
 
-    --accent: 16 85% 76%;
-    --accent-foreground: 0 0% 23%;
+    --accent: 270 75% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --success: 123 25% 76%;
-    --success-foreground: 0 0% 23%;
+    --success: 158 64% 52%;
+    --success-foreground: 0 0% 100%;
 
-    --warning: 48 94% 81%;
-    --warning-foreground: 0 0% 23%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 100%;
 
-    --destructive: 0 65% 84%;
-    --destructive-foreground: 0 0% 23%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 213 27% 92%;
-    --input: 213 27% 92%;
-    --ring: 213 100% 94%;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 23%;
-    --sidebar-primary: 213 100% 94%;
-    --sidebar-primary-foreground: 0 0% 23%;
-    --sidebar-accent: 213 27% 96%;
-    --sidebar-accent-foreground: 0 0% 23%;
-    --sidebar-border: 213 27% 92%;
-    --sidebar-ring: 213 100% 94%;
+    --border: 264 20% 20%;
+    --input: 264 20% 16%;
+    --ring: 262 80% 64%;
+    
+    --gradient-card: linear-gradient(145deg, hsl(260 15% 10%), hsl(264 20% 12%));
+    --gradient-header: linear-gradient(135deg, hsl(262 80% 64%), hsl(270 75% 65%));
+    
+    --sidebar-background: 260 15% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 262 80% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 264 20% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 264 20% 20%;
+    --sidebar-ring: 262 80% 64%;
   }
 }
 
