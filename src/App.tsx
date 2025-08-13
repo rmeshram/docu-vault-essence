@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { BottomNavigation } from "@/components/layout/BottomNavigation";
+import Sidebar from "./components/layout/Sidebar";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Upload from "./pages/Upload";
@@ -22,19 +22,27 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <div className="relative">
+        <div className="min-h-screen bg-background flex">
           <Routes>
-            <Route path="/" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/upload" element={<Upload />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/document/:id" element={<DocumentDetail />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={
+              <div className="flex w-full">
+                <Sidebar />
+                <main className="flex-1 overflow-auto">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/upload" element={<Upload />} />
+                    <Route path="/categories" element={<Categories />} />
+                    <Route path="/search" element={<Search />} />
+                    <Route path="/chat" element={<Chat />} />
+                    <Route path="/document/:id" element={<DocumentDetail />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+              </div>
+            } />
           </Routes>
-          <BottomNavigation />
         </div>
       </BrowserRouter>
     </TooltipProvider>

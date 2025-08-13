@@ -32,39 +32,40 @@ export default function Categories() {
   );
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-primary p-6 pt-12 rounded-b-3xl shadow-medium">
-        <h1 className="text-white text-2xl font-bold mb-2">Categories</h1>
-        <p className="text-white/80 text-sm">Organize and browse your documents</p>
+      <div className="bg-white border-b border-border p-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-semibold text-foreground mb-2">Categories</h1>
+          <p className="text-muted-foreground">Organize and browse your documents</p>
+        </div>
       </div>
 
-      <div className="p-4 space-y-6">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Search & Filters */}
         <section className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 h-12 rounded-xl border-2"
-            />
-          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11 rounded-lg"
+              />
+            </div>
 
-          <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 rounded-xl"
+              className="flex items-center gap-2"
             >
               <Filter className="w-4 h-4" />
               Filters
             </Button>
             
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40 h-9 rounded-xl">
+              <SelectTrigger className="w-48">
                 <SortDesc className="w-4 h-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
@@ -79,43 +80,45 @@ export default function Categories() {
           </div>
 
           {showFilters && (
-            <Card className="bg-gradient-card border-0 shadow-soft">
-              <CardContent className="p-4 space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Date Range</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input type="date" className="h-9 rounded-lg" />
-                    <Input type="date" className="h-9 rounded-lg" />
+            <Card className="bg-white border shadow-soft">
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">Date Range</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input type="date" className="h-10" />
+                      <Input type="date" className="h-10" />
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">AI Tags</label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Important", "Urgent", "Financial", "Health"].map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="outline"
-                        className="cursor-pointer hover:bg-primary/10"
-                      >
-                        {tag}
-                      </Badge>
-                    ))}
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">AI Tags</label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Important", "Urgent", "Financial", "Health"].map((tag) => (
+                        <Badge
+                          key={tag}
+                          variant="outline"
+                          className="cursor-pointer hover:bg-primary"
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Source</label>
-                  <Select>
-                    <SelectTrigger className="h-9 rounded-lg">
-                      <SelectValue placeholder="All sources" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="camera">Camera</SelectItem>
-                      <SelectItem value="gallery">Gallery</SelectItem>
-                      <SelectItem value="import">Import</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-3 block">Source</label>
+                    <Select>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="All sources" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="camera">Camera</SelectItem>
+                        <SelectItem value="gallery">Gallery</SelectItem>
+                        <SelectItem value="import">Import</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -124,18 +127,18 @@ export default function Categories() {
 
         {/* Categories Grid */}
         <section>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCategories.map((category) => (
-              <Card key={category.id} className="bg-gradient-card border-0 shadow-soft cursor-pointer hover:shadow-medium transition-all duration-200 hover:scale-105">
+              <Card key={category.id} className="bg-white border shadow-soft cursor-pointer hover:shadow-medium transition-all duration-200 hover:scale-[1.02]">
                 <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <category.icon className="w-6 h-6 text-primary" />
+                  <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <category.icon className="w-8 h-8 text-primary-foreground" />
                   </div>
-                  <h3 className="font-medium text-sm mb-1">{category.name}</h3>
-                  <p className="text-xs text-muted-foreground">
+                  <h3 className="font-semibold text-base mb-2">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-3">
                     {category.count} document{category.count !== 1 ? 's' : ''}
                   </p>
-                  <Badge className={`mt-2 ${category.color}`}>
+                  <Badge variant="secondary" className="text-xs">
                     <Folder className="w-3 h-3 mr-1" />
                     {category.count}
                   </Badge>
@@ -145,31 +148,31 @@ export default function Categories() {
           </div>
 
           {filteredCategories.length === 0 && (
-            <div className="text-center py-12">
-              <Folder className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No categories found</h3>
-              <p className="text-muted-foreground">Try adjusting your search or filters</p>
+            <div className="text-center py-16">
+              <Folder className="w-20 h-20 text-muted-foreground mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-foreground mb-3">No categories found</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">Try adjusting your search or filters to find the categories you're looking for</p>
             </div>
           )}
         </section>
 
         {/* Quick Stats */}
         <section>
-          <Card className="bg-gradient-card border-0 shadow-soft">
-            <CardContent className="p-4">
-              <h3 className="font-medium mb-3">Quick Stats</h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-primary">70</p>
-                  <p className="text-xs text-muted-foreground">Total Docs</p>
+          <Card className="bg-white border shadow-soft">
+            <CardContent className="p-6">
+              <h3 className="font-semibold text-lg mb-6">Quick Stats</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-foreground">70</p>
+                  <p className="text-sm text-muted-foreground">Total Documents</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-secondary">6</p>
-                  <p className="text-xs text-muted-foreground">Categories</p>
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-foreground">6</p>
+                  <p className="text-sm text-muted-foreground">Categories</p>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-accent">12</p>
-                  <p className="text-xs text-muted-foreground">This Week</p>
+                <div className="space-y-2">
+                  <p className="text-3xl font-bold text-foreground">12</p>
+                  <p className="text-sm text-muted-foreground">Added This Week</p>
                 </div>
               </div>
             </CardContent>
