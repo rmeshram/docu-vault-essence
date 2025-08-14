@@ -8,6 +8,8 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import Upload from "./pages/Upload";
 import Categories from "./pages/Categories";
+import CategoryFolder from "./pages/CategoryFolder";
+import SmartTags from "./pages/SmartTags";
 import Search from "./pages/Search";
 import Chat from "./pages/Chat";
 import DocumentDetail from "./pages/DocumentDetail";
@@ -34,6 +36,8 @@ const App = () => (
                       <Route path="/" element={<Home />} />
                       <Route path="upload" element={<Upload />} />
                       <Route path="categories" element={<Categories />} />
+                      <Route path="category/:categoryId" element={<CategoryFolder />} />
+                      <Route path="smart-tags" element={<SmartTags />} />
                       <Route path="search" element={<Search />} />
                       <Route path="chat" element={<Chat />} />
                       <Route path="document/:id" element={<DocumentDetail />} />

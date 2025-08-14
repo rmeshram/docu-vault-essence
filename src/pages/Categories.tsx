@@ -208,7 +208,7 @@ export default function Categories() {
             <Button 
               variant="ghost" 
               className="group flex items-center justify-start gap-2 h-auto py-3 hover:bg-success/5 transition-all duration-300"
-              onClick={() => window.location.href = '/auto-tag'}
+              onClick={() => window.location.href = '/smart-tags'}
             >
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-success/15 to-success/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <Tag className="w-5 h-5 text-success group-hover:rotate-12 transition-transform duration-300" />

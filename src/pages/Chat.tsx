@@ -166,73 +166,96 @@ export default function Chat() {
     setIsTyping(true);
     setShowQuickPrompts(false);
 
-    // Enhanced AI response simulation
-    setTimeout(() => {
-      let aiContent = '';
-      let relatedDocs: Array<{id: string; title: string; type: string; relevance: number; snippet: string}> = [];
-      let suggestions: string[] = [];
+          // Enhanced AI response simulation with better document analysis
+          setTimeout(() => {
+            let aiContent = '';
+            let relatedDocs: Array<{id: string; title: string; type: string; relevance: number; snippet: string}> = [];
+            let suggestions: string[] = [];
 
-      if (uploadedDocuments.length > 0) {
-        // Find relevant documents
-        const relevantDocs = uploadedDocuments.filter(doc => 
-          selectedDocument === 'all' || selectedDocument === '' || doc.id === selectedDocument
-        );
+            if (uploadedDocuments.length > 0) {
+              // Find relevant documents based on query and document content
+              const relevantDocs = uploadedDocuments.filter(doc => {
+                const searchTerms = inputMessage.toLowerCase().split(' ');
+                const docText = (doc.name + ' ' + (doc.extractedText || '')).toLowerCase();
+                
+                return searchTerms.some(term => 
+                  docText.includes(term) || 
+                  (selectedDocument === 'all' || selectedDocument === '' || doc.id === selectedDocument)
+                );
+              });
 
-        if (relevantDocs.length > 0) {
-          // Generate contextual response based on query type
-          if (inputMessage.toLowerCase().includes('tax') || inputMessage.toLowerCase().includes('टैक्स')) {
-            aiContent = `Based on your tax documents analysis, I found several opportunities:\n\n• Potential savings: ₹45,000-67,000\n• Missing deductions identified: 5\n• Optimal tax planning suggestions available\n\nWould you like me to connect you with a certified CA for detailed review?`;
-            suggestions = [
-              'Book CA consultation for ₹2,499',
-              'Show detailed tax breakdown',
-              'Find more deductions'
-            ];
-          } else if (inputMessage.toLowerCase().includes('insurance') || inputMessage.toLowerCase().includes('इंश्योरेंस')) {
-            aiContent = `Insurance portfolio analysis complete:\n\n• Health insurance: ₹5L coverage, expires May 15, 2024\n• Life insurance: ₹25L coverage, active\n• Vehicle insurance: Expires in 3 months\n• Recommended: Increase health coverage to ₹10L\n\nEarly renewal can save you ₹2,500 on health insurance.`;
-            suggestions = [
-              'Renew health insurance now',
-              'Compare insurance plans',
-              'Set renewal reminders'
-            ];
-          } else if (inputMessage.toLowerCase().includes('document') || inputMessage.toLowerCase().includes('डॉक्यूमेंट')) {
-            aiContent = `Document search completed:\n\n• Found ${relevantDocs.length} relevant documents\n• 2 duplicates detected and can be merged\n• 1 document needs renewal\n• All documents are properly categorized\n\nYour document organization score: 85/100`;
-            suggestions = [
-              'Merge duplicate documents',
-              'Set renewal reminders',
-              'Improve organization score'
-            ];
-          } else {
-            aiContent = `I've analyzed your query across ${relevantDocs.length} documents. Here's what I found:\n\n• Relevant information extracted from multiple sources\n• Cross-referenced with your document history\n• Personalized recommendations generated\n\nHow can I help you further with this information?`;
-            suggestions = [
-              'Get more details',
-              'Export this analysis',
-              'Ask follow-up question'
-            ];
-          }
+              if (relevantDocs.length > 0) {
+                // Generate contextual response based on query type
+                if (inputMessage.toLowerCase().includes('tax') || inputMessage.toLowerCase().includes('टैक्स')) {
+                  aiContent = `Based on analysis of ${relevantDocs.length} tax-related documents:\n\n• Potential tax savings identified: ₹45,000-67,000\n• Missing deduction opportunities: 5 found\n• Optimal filing strategy recommendations available\n• Document completeness score: 92%\n\nI can help you maximize your tax benefits. Would you like a detailed breakdown?`;
+                  suggestions = [
+                    'Show detailed tax breakdown',
+                    'Find missing deductions',
+                    'Book CA consultation',
+                    'Export tax summary'
+                  ];
+                } else if (inputMessage.toLowerCase().includes('insurance') || inputMessage.toLowerCase().includes('इंश्योरेंस')) {
+                  aiContent = `Insurance portfolio analysis from ${relevantDocs.length} documents:\n\n• Health insurance: ₹5L coverage, expires May 15, 2024\n• Life insurance: ₹25L coverage, active\n• Vehicle insurance: Expires in 3 months\n• Coverage gap analysis: Need ₹5L additional health coverage\n\nEarly renewal discount available: Save ₹2,500 on health insurance.`;
+                  suggestions = [
+                    'Renew health insurance now',
+                    'Compare insurance plans',
+                    'Set renewal reminders',
+                    'Calculate coverage needs'
+                  ];
+                } else if (inputMessage.toLowerCase().includes('document') || inputMessage.toLowerCase().includes('डॉक्यूमेंट') || inputMessage.toLowerCase().includes('find') || inputMessage.toLowerCase().includes('show')) {
+                  aiContent = `Document search completed across your vault:\n\n• Found ${relevantDocs.length} matching documents\n• 2 potential duplicates detected\n• 1 document requires renewal attention\n• Organization score: 85/100\n• Last backup: ${new Date().toLocaleDateString()}\n\nAll documents are properly categorized and searchable.`;
+                  suggestions = [
+                    'View found documents',
+                    'Merge duplicate documents',
+                    'Set renewal reminders',
+                    'Improve organization'
+                  ];
+                } else if (inputMessage.toLowerCase().includes('summary') || inputMessage.toLowerCase().includes('summarize')) {
+                  aiContent = `Document summary generated:\n\n• Total documents analyzed: ${relevantDocs.length}\n• Key insights extracted from each document\n• Important dates and deadlines identified\n• Cross-references between related documents found\n\nI've created a comprehensive overview of your selected documents. Need specific details from any document?`;
+                  suggestions = [
+                    'Show detailed breakdown',
+                    'Extract key dates',
+                    'Find relationships',
+                    'Export summary'
+                  ];
+                } else {
+                  // General query - provide intelligent response based on document content
+                  const documentTypes = [...new Set(relevantDocs.map(doc => doc.type))];
+                  aiContent = `I've analyzed your query across ${relevantDocs.length} documents (${documentTypes.join(', ')}):\n\n• Extracted relevant information from multiple sources\n• Cross-referenced with your document history\n• Generated personalized insights\n• Identified related documents and connections\n\nWhat specific aspect would you like me to elaborate on?`;
+                  suggestions = [
+                    'Get more details',
+                    'Show related documents',
+                    'Export analysis',
+                    'Ask follow-up question'
+                  ];
+                }
 
-          relatedDocs = relevantDocs.slice(0, 3).map(doc => ({
-            id: doc.id,
-            title: doc.name,
-            type: doc.type,
-            relevance: Math.floor(Math.random() * 20) + 80,
-            snippet: doc.extractedText?.substring(0, 100) + '...' || 'Document content available'
-          }));
-        } else {
-          aiContent = 'I don\'t see any uploaded documents that match your query. Please upload some relevant documents first, and I\'ll be able to provide specific insights and analysis.';
-          suggestions = [
-            'Upload documents',
-            'Browse categories',
-            'Try different query'
-          ];
-        }
-      } else {
-        aiContent = 'Welcome to DocuVault AI! I notice you haven\'t uploaded any documents yet. Upload your documents first so I can provide personalized insights, analysis, and answers to your questions.';
-        suggestions = [
-          'Upload first document',
-          'Learn about features',
-          'See demo examples'
-        ];
-      }
+                // Create relevant document references
+                relatedDocs = relevantDocs.slice(0, 3).map(doc => ({
+                  id: doc.id,
+                  title: doc.name,
+                  type: doc.type,
+                  relevance: Math.floor(Math.random() * 20) + 80,
+                  snippet: doc.extractedText?.substring(0, 100) + '...' || 'Document content available for analysis'
+                }));
+              } else {
+                aiContent = 'I searched through your uploaded documents but couldn\'t find content matching your specific query. Try rephrasing your question or upload more relevant documents for better analysis.';
+                suggestions = [
+                  'Rephrase question',
+                  'Upload more documents',
+                  'Browse all documents',
+                  'Try voice search'
+                ];
+              }
+            } else {
+              aiContent = 'Welcome to DocuVault AI! 🚀\n\nI\'m ready to help you manage and analyze your documents intelligently. To get started:\n\n• Upload your first document\n• I\'ll automatically extract and analyze content\n• Ask me questions about your documents\n• Get insights, summaries, and smart recommendations\n\nLet\'s make your document management effortless!';
+              suggestions = [
+                'Upload first document',
+                'Take a demo tour',
+                'Learn about AI features',
+                'See example queries'
+              ];
+            }
 
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
