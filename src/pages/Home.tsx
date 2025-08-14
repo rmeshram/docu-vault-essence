@@ -29,10 +29,10 @@ import { Pie, Line } from 'react-chartjs-2';
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 
 const recentDocuments = [
-  { id: 1, title: "Aadhaar Card", type: "PDF", thumbnail: "/placeholder.svg", date: "2 hours ago", category: "Identity", size: "0.5 MB", aiSummary: "Identity document with biometric data" },
-  { id: 2, title: "PAN Card", type: "PDF", thumbnail: "/placeholder.svg", date: "1 day ago", category: "Identity", size: "0.3 MB", aiSummary: "Permanent Account Number for tax purposes" },
-  { id: 3, title: "Tax Return 2024", type: "PDF", thumbnail: "/placeholder.svg", date: "3 days ago", category: "Financial", size: "2.1 MB", aiSummary: "Annual tax filing with ₹45,000 deductions found" },
-  { id: 4, title: "Health Insurance Policy", type: "PDF", thumbnail: "/placeholder.svg", date: "1 week ago", category: "Insurance", size: "1.8 MB", aiSummary: "₹5L coverage, expires May 15, 2024" },
+  { id: 1, title: "Aadhaar Card", type: "PDF", thumbnail: "/placeholder.svg", date: "2 hours ago", category: "Identity", size: "0.5 MB", aiSummary: "Identity document with biometric data", relationships: "Mom", versions: 2, duplicates: 1, blockchain: true, autoFolders: ["Identity"], tags: ["Government"] },
+  { id: 2, title: "PAN Card", type: "PDF", thumbnail: "/placeholder.svg", date: "1 day ago", category: "Identity", size: "0.3 MB", aiSummary: "Permanent Account Number for tax purposes", relationships: "Dad", versions: 1, duplicates: 0, blockchain: false, autoFolders: ["Identity"], tags: ["Tax"] },
+  { id: 3, title: "Tax Return 2024", type: "PDF", thumbnail: "/placeholder.svg", date: "3 days ago", category: "Financial", size: "2.1 MB", aiSummary: "Annual tax filing with ₹45,000 deductions found", relationships: "Self", versions: 3, duplicates: 2, blockchain: true, autoFolders: ["Financial"], tags: ["Income", "Tax"] },
+  { id: 4, title: "Health Insurance Policy", type: "PDF", thumbnail: "/placeholder.svg", date: "1 week ago", category: "Insurance", size: "1.8 MB", aiSummary: "₹5L coverage, expires May 15, 2024", relationships: "Family", versions: 1, duplicates: 0, blockchain: false, autoFolders: ["Insurance"], tags: ["Health"] },
 ];
 
 const aiInsights = [
@@ -154,7 +154,7 @@ const integrationPreviews = [
 export default function Home() {
   const navigate = useNavigate();
   const [user] = useState({ 
-    name: "Priya Sharma", 
+    name: "Rahul", 
     avatar: "/placeholder.svg", 
     tier: "Premium",
     storageUsed: 78,
