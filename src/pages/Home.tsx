@@ -12,6 +12,7 @@ Image,
 Check, CheckCircle, Info, HelpCircle,
 Lightbulb, Calculator
 } from "lucide-react";
+import { TestApiButton } from "@/components/examples/TestApiButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

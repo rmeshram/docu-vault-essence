@@ -1,25 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, Mail, Phone, Apple } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
+    name: "",
     phone: "",
     password: "",
     confirmPassword: "",
   });
   const navigate = useNavigate();
+  const { signIn, signUp, user, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock authentication - redirect to home
-    navigate('/');
+    setIsLoading(true);
+
+    try {
+      if (isSignUp) {
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+        await signUp(formData.email, formData.password, { name: formData.name });
+      } else {
+        const { error } = await signIn(formData.email, formData.password);
+        if (!error) {
+          navigate('/');
+        }
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -75,16 +103,28 @@ export default function Auth() {
               </div>
 
               {isSignUp && (
-                <div className="relative">
-                  <Phone className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    placeholder="Phone number (optional)"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="pl-10 h-12 rounded-xl border-2"
-                  />
-                </div>
+                <>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Full Name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className="h-12 rounded-xl border-2"
+                      required
+                    />
+                  </div>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      type="tel"
+                      placeholder="Phone number (optional)"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      className="pl-10 h-12 rounded-xl border-2"
+                    />
+                  </div>
+                </>
               )}
 
               {/* Password Input */}
@@ -120,9 +160,10 @@ export default function Auth() {
               {/* Submit Button */}
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-xl uppercase tracking-wide"
+                disabled={isLoading}
+                className="w-full h-12 bg-accent hover:bg-accent/90 text-accent-foreground font-medium rounded-xl uppercase tracking-wide disabled:opacity-50"
               >
-                {isSignUp ? "Create Account" : "Sign In"}
+                {isLoading ? "Please wait..." : (isSignUp ? "Create Account" : "Sign In")}
               </Button>
             </form>
 
