@@ -31,6 +31,8 @@ import { reminderService, type Reminder } from '@/services/reminderService';
 import { familyService, type FamilyMember } from '@/services/familyService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { createMockData } from '@/services/mockDataService';
+import { useToast } from '@/hooks/use-toast';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
@@ -151,6 +153,25 @@ const quickActions = [
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleCreateMockData = async () => {
+    const result = await createMockData()
+    if (result.success) {
+      toast({
+        title: "Mock Data Created",
+        description: "Sample documents, categories, and tags have been added to your account",
+      })
+      // Refresh the page to show new data
+      window.location.reload()
+    } else {
+      toast({
+        title: "Error",
+        description: result.error,
+        variant: "destructive"
+      })
+    }
+  }
   
   // Backend-driven state
   const [recentDocs, setRecentDocs] = useState<Document[]>([]);
@@ -1182,9 +1203,9 @@ export default function Home() {
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Ask AI Anything
                 </Button>
-                <Button variant="outline" className="text-primary border-primary/20 hover:bg-primary/5">
+                <Button variant="outline" className="text-primary border-primary/20 hover:bg-primary/5" onClick={handleCreateMockData}>
                   <TrendingUp className="w-4 h-4 mr-2" />
-                  View All Insights
+                  Create Mock Data
                 </Button>
               </div>
             </CardContent>
