@@ -16,6 +16,9 @@ import Search from "./pages/Search";
 import Chat from "./pages/Chat";
 import DocumentDetail from "./pages/DocumentDetail";
 import Profile from "./pages/Profile";
+import FamilyVault from "./pages/FamilyVault";
+import VersionHistory from "./pages/VersionHistory";
+import Timeline from "./pages/Timeline";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +49,9 @@ const App = () => (
                           <Route path="chat" element={<Chat />} />
                           <Route path="document/:id" element={<DocumentDetail />} />
                           <Route path="profile" element={<Profile />} />
+                          <Route path="family-vault" element={<FamilyVault />} />
+                          <Route path="version-history" element={<VersionHistory />} />
+                          <Route path="timeline" element={<Timeline />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </div>
