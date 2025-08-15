@@ -25,80 +25,68 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
-import { documentService } from '@/services/documentService';
+import { documentService, type Document } from '@/services/documentService';
+import { insightService, type AIInsight } from '@/services/insightService';
+import { reminderService, type Reminder } from '@/services/reminderService';
+import { familyService, type FamilyMember } from '@/services/familyService';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
 
-const recentDocuments = [
-  { id: 1, title: "Aadhaar Card", type: "PDF", thumbnail: "/placeholder.svg", date: "2 hours ago", category: "Identity", size: "0.5 MB", aiSummary: "Identity document with biometric data", relationships: "Mom", versions: 2, duplicates: 1, blockchain: true, autoFolders: ["Identity"], tags: ["Government"] },
-  { id: 2, title: "PAN Card", type: "PDF", thumbnail: "/placeholder.svg", date: "1 day ago", category: "Identity", size: "0.3 MB", aiSummary: "Permanent Account Number for tax purposes", relationships: "Dad", versions: 1, duplicates: 0, blockchain: false, autoFolders: ["Identity"], tags: ["Tax"] },
-  { id: 3, title: "Tax Return 2024", type: "PDF", thumbnail: "/placeholder.svg", date: "3 days ago", category: "Financial", size: "2.1 MB", aiSummary: "Annual tax filing with ₹45,000 deductions found", relationships: "Self", versions: 3, duplicates: 2, blockchain: true, autoFolders: ["Financial"], tags: ["Income", "Tax"] },
-  { id: 4, title: "Health Insurance Policy", type: "PDF", thumbnail: "/placeholder.svg", date: "1 week ago", category: "Insurance", size: "1.8 MB", aiSummary: "₹5L coverage, expires May 15, 2024", relationships: "Family", versions: 1, duplicates: 0, blockchain: false, autoFolders: ["Insurance"], tags: ["Health"] },
-];
+// Helper functions to transform backend data for display
+const getInsightIcon = (insightType: string) => {
+  switch (insightType) {
+    case 'risk': return AlertCircle;
+    case 'opportunity': return TrendingUp;
+    case 'duplicate': return FileText;
+    case 'family': return Users;
+    default: return Info;
+  }
+};
 
-const aiInsights = [
-  { 
-    type: "risk", 
-    text: "Health Insurance expires in 15 days - ₹12,500 premium due", 
-    color: "text-destructive",
-    action: "Renew Now",
-    icon: AlertCircle,
-    priority: "high",
-    savings: "₹2,500 early bird discount available"
-  },
-  { 
-    type: "opportunity", 
-    text: "AI found 5 tax deductions worth ₹67,000 in your documents", 
-    color: "text-success",
-    action: "Review Deductions",
-    icon: TrendingUp,
-    priority: "medium",
-    savings: "Save ₹18,900 in taxes"
-  },
-  { 
-    type: "duplicate", 
-    text: "3 duplicate Aadhaar copies detected - merge to save space", 
-    color: "text-warning",
-    action: "Merge Files",
-    icon: FileText,
-    priority: "low",
-    savings: "Free up 1.2 MB storage"
-  },
-  { 
-    type: "family", 
-    text: "Mom's medical reports need your attention - 2 new documents", 
-    color: "text-accent",
-    action: "View Family Vault",
-    icon: Users,
-    priority: "medium",
-    savings: "Family health tracking active"
-  },
-];
+const getInsightColor = (priority: string) => {
+  switch (priority) {
+    case 'high': return 'text-destructive';
+    case 'medium': return 'text-warning';
+    case 'low': return 'text-success';
+    default: return 'text-muted-foreground';
+  }
+};
 
-const upcomingReminders = [
-  { title: "Tax Filing Deadline", date: "2024-04-15", urgency: "high", category: "Financial", countdown: "12 days", amount: "₹18,900 refund expected" },
-  { title: "Health Insurance Renewal", date: "2024-05-15", urgency: "high", category: "Insurance", countdown: "45 days", amount: "₹12,500 premium" },
-  { title: "PAN Card Update", date: "2024-06-01", urgency: "medium", category: "Identity", countdown: "62 days", amount: "₹110 fee" },
-  { title: "Car Insurance Renewal", date: "2024-07-20", urgency: "medium", category: "Insurance", countdown: "111 days", amount: "₹8,500 premium" },
-  { title: "Property Tax Payment", date: "2024-03-31", urgency: "high", category: "Financial", countdown: "1 day", amount: "₹15,000 due" },
-  { title: "Medical Checkup", date: "2024-04-30", urgency: "low", category: "Health", countdown: "27 days", amount: "₹2,500 estimated" },
-];
+const formatReminderDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffTime = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Tomorrow';
+  if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+  return `${diffDays} days`;
+};
 
-const quickActions = [
-  { title: "Upload & Scan", description: "Add documents instantly", icon: Upload, color: "bg-primary", onClick: "upload", badge: "AI OCR" },
-  { title: "Voice Chat", description: "Ask AI in Hindi/English", icon: Headphones, color: "bg-accent", onClick: "chat", badge: "15+ Languages" },
-  { title: "Family Vault", description: "Share with 5 members", icon: Users, color: "bg-success", onClick: "family", badge: "50GB Shared" },
-  { title: "Expert Services", description: "CA, Lawyer consultations", icon: Briefcase, color: "bg-warning", onClick: "marketplace", badge: "₹2,499+" },
-];
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
 
-const familyMembers = [
-  { name: "Mom", docs: 34, avatar: "M", status: "active", role: "Admin", storage: "12.5GB" },
-  { name: "Dad", docs: 28, avatar: "D", status: "active", role: "Member", storage: "8.2GB" },
-  { name: "Sister", docs: 16, avatar: "S", status: "pending", role: "Viewer", storage: "3.1GB" },
-  { name: "Brother", docs: 12, avatar: "B", status: "active", role: "Member", storage: "2.8GB" },
-  { name: "Grandma", docs: 8, avatar: "G", status: "emergency", role: "Emergency", storage: "1.2GB" },
-];
+const formatTimeAgo = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffTime = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffHours < 1) return 'Just now';
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffDays === 1) return '1 day ago';
+  return `${diffDays} days ago`;
+};
 
 const securityBadges = [
   { label: "AES-256 Encrypted", icon: Lock, verified: true },
@@ -153,19 +141,36 @@ const integrationPreviews = [
   { name: "Gmail Import", icon: Mail, status: "available", description: "Extract attachments" },
 ];
 
+const quickActions = [
+  { title: "Upload & Scan", description: "Add documents instantly", icon: Upload, color: "bg-primary", onClick: "upload", badge: "AI OCR" },
+  { title: "Voice Chat", description: "Ask AI in Hindi/English", icon: Headphones, color: "bg-accent", onClick: "chat", badge: "15+ Languages" },
+  { title: "Family Vault", description: "Share with 5 members", icon: Users, color: "bg-success", onClick: "family", badge: "50GB Shared" },
+  { title: "Expert Services", description: "CA, Lawyer consultations", icon: Briefcase, color: "bg-warning", onClick: "marketplace", badge: "₹2,499+" },
+];
+
 export default function Home() {
   const navigate = useNavigate();
-  const [user] = useState({ 
-    name: "Rahul", 
-    avatar: "/placeholder.svg", 
+  const { user } = useAuth();
+  
+  // Backend-driven state
+  const [recentDocs, setRecentDocs] = useState<Document[]>([]);
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
+  const [upcomingReminders, setUpcomingReminders] = useState<Reminder[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<{ category: string; count: number }[]>([]);
+  const [userStats, setUserStats] = useState({
+    name: user?.user_metadata?.name || user?.email?.split('@')[0] || "User",
+    avatar: user?.user_metadata?.avatar_url || "/placeholder.svg",
     tier: "Premium",
-    storageUsed: 78,
-    totalDocs: 186,
+    storageUsed: 0,
+    totalDocs: 0,
     aiQueriesLeft: 142,
-    familyMembers: 5,
-    monthlyUploads: 23,
-    aiInsightsFound: 12
+    familyMembers: 0,
+    monthlyUploads: 0,
+    aiInsightsFound: 0
   });
+  
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentInsight, setCurrentInsight] = useState(0);
   const [language, setLanguage] = useState("English");
@@ -173,41 +178,161 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
 
-  // Backend-driven state
-  const [recentDocs, setRecentDocs] = useState<any[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState<{ category: string; count: number }[]>([]);
-  const [totalDocs, setTotalDocs] = useState<number>(user.totalDocs);
-
-  // Fetch recent documents and category counts from backend
+  // Fetch all home data from backend
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
-      try {
-        const docs = await documentService.getRecentDocuments(8);
-        if (!mounted) return;
-        setRecentDocs(docs || []);
-        setTotalDocs((docs && docs.length) ? docs.length : user.totalDocs);
-
-        const cats = await documentService.getCategoriesWithCounts();
-        if (!mounted) return;
-        // Expecting [{ category, count }]
-        setCategoryCounts(cats || []);
-      } catch (err) {
-        console.error('Failed to load home data', err);
+    const loadHomeData = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    })();
 
-    return () => { mounted = false; };
-  }, []);
+      try {
+        setLoading(true);
+        
+        // Fetch all data in parallel
+        const [
+          docsData,
+          categoriesData,
+          insightsData,
+          remindersData,
+          familyData,
+          userProfile
+        ] = await Promise.all([
+          documentService.getRecentDocuments(8),
+          documentService.getCategoriesWithCounts(),
+          insightService.getInsights(),
+          reminderService.getUpcomingReminders(90),
+          familyService.getFamilyMembers(),
+          // Get user profile/subscription data
+          supabase.from('user_profiles').select('*').eq('id', user.id).single()
+        ]);
+
+        if (!mounted) return;
+
+        // Update state with fetched data
+        setRecentDocs(docsData || []);
+        setCategoryCounts(categoriesData || []);
+        setAiInsights(insightsData || []);
+        setUpcomingReminders(remindersData || []);
+        setFamilyMembers(familyData || []);
+
+        // Calculate user stats from fetched data
+        const totalDocuments = docsData?.length || 0;
+        const totalInsights = insightsData?.filter(insight => !insight.is_acknowledged)?.length || 0;
+        
+        // Get storage usage from profile or calculate estimate
+        const storageUsed = userProfile.data?.storage_used_mb 
+          ? Math.round((userProfile.data.storage_used_mb / 50000) * 100) // Assuming 50GB limit
+          : Math.min(totalDocuments * 2, 78); // Rough estimate: 2% per document
+
+        setUserStats(prev => ({
+          ...prev,
+          totalDocs: totalDocuments,
+          aiInsightsFound: totalInsights,
+          storageUsed,
+          familyMembers: familyData?.length || 0,
+          monthlyUploads: docsData?.filter(doc => {
+            const docDate = new Date(doc.created_at);
+            const monthAgo = new Date();
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            return docDate > monthAgo;
+          })?.length || 0,
+          tier: userProfile.data?.subscription_tier || "Free"
+        }));
+
+      } catch (error) {
+        console.error('Failed to load home data:', error);
+        // Show fallback data or error handling
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadHomeData();
+
+    return () => { 
+      mounted = false; 
+    };
+  }, [user]);
+
+  // Set up real-time subscriptions for live data updates
+  useEffect(() => {
+    if (!user) return;
+
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    // Subscribe to document changes
+    const documentsSubscription = supabase
+      .channel('documents')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'documents', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setRecentDocs(prev => [payload.new as Document, ...prev.slice(0, 7)]);
+          } else if (payload.eventType === 'UPDATE') {
+            setRecentDocs(prev => prev.map(doc => 
+              doc.id === payload.new.id ? payload.new as Document : doc
+            ));
+          } else if (payload.eventType === 'DELETE') {
+            setRecentDocs(prev => prev.filter(doc => doc.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to AI insights changes  
+    const insightsSubscription = supabase
+      .channel('insights')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'ai_insights', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAiInsights(prev => [payload.new as AIInsight, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAiInsights(prev => prev.map(insight => 
+              insight.id === payload.new.id ? payload.new as AIInsight : insight
+            ));
+          }
+        }
+      )
+      .subscribe();
+
+    // Subscribe to reminders changes
+    const remindersSubscription = supabase
+      .channel('reminders')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'reminders', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setUpcomingReminders(prev => [...prev, payload.new as Reminder]);
+          } else if (payload.eventType === 'UPDATE') {
+            setUpcomingReminders(prev => prev.map(reminder => 
+              reminder.id === payload.new.id ? payload.new as Reminder : reminder
+            ));
+          }
+        }
+      )
+      .subscribe();
+
+    subscriptions.push(documentsSubscription, insightsSubscription, remindersSubscription);
+
+    return () => {
+      subscriptions.forEach(sub => sub.unsubscribe());
+    };
+  }, [user]);
 
   // Rotate insights every 5 seconds
   useEffect(() => {
+    if (aiInsights.length === 0) return;
+    
     const interval = setInterval(() => {
       setCurrentInsight((prev) => (prev + 1) % aiInsights.length);
     }, 5000);
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [aiInsights.length]);
 
   // Chart data for document categories
   const categoryLabels = ['Financial', 'Identity', 'Insurance', 'Medical', 'Legal', 'Personal'];
@@ -335,6 +460,55 @@ export default function Home() {
     }
   };
 
+  // Show loading screen if still loading
+  if (loading) {
+    return (
+      <div className="min-h-screen pb-20 bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <FileText className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Loading your vault...</h3>
+          <p className="text-muted-foreground">Gathering your documents and insights</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth prompt if no user
+  if (!user) {
+    return (
+      <div className="min-h-screen pb-20 bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Welcome to DocuVault AI</h3>
+          <p className="text-muted-foreground mb-6">Please sign in to access your secure document vault</p>
+          <Button onClick={() => navigate('/auth')} className="bg-primary text-white">
+            Sign In
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+              <h2 className="text-xl font-semibold text-foreground">Loading your digital vault...</h2>
+              <p className="text-muted-foreground">Fetching your documents and insights</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen pb-20 transition-colors duration-300 ${isDarkMode ? 'dark bg-gray-900' : 'bg-background'}`}>
       {/* Enhanced Header with Cultural Elements */}
@@ -352,9 +526,9 @@ export default function Home() {
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar className="w-16 h-16 border-3 border-white/40 shadow-large">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={userStats.avatar} alt={userStats.name} />
                   <AvatarFallback className="bg-white/20 text-white font-bold text-xl">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {userStats.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-success rounded-full border-3 border-white flex items-center justify-center">
@@ -364,24 +538,24 @@ export default function Home() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-white/90 text-sm font-medium">नमस्ते (Good morning),</p>
-                  <Badge className="bg-white/20 text-white border-white/30 text-xs font-bold">{user.tier}</Badge>
+                  <Badge className="bg-white/20 text-white border-white/30 text-xs font-bold">{userStats.tier}</Badge>
                   <Badge className="bg-success/20 text-white border-success/30 text-xs">DigiLocker Synced</Badge>
                 </div>
-                <h1 className="text-white text-2xl font-bold mb-1">{user.name}</h1>
+                <h1 className="text-white text-2xl font-bold mb-1">{userStats.name}</h1>
                 <div className="flex items-center gap-4 text-white/80 text-xs">
                   <span className="flex items-center gap-1">
                     <FileText className="w-3 h-3" />
-                    {user.totalDocs} docs
+                    {userStats.totalDocs} docs
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
                     <Brain className="w-3 h-3" />
-                    {user.aiQueriesLeft} AI queries
+                    {userStats.aiQueriesLeft} AI queries
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    {user.familyMembers} family
+                    {userStats.familyMembers} family
                   </span>
                 </div>
               </div>
@@ -487,9 +661,9 @@ export default function Home() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white/90 text-sm font-medium">Personal Storage</span>
-                    <span className="text-white text-sm font-bold">{user.storageUsed}% of 50GB</span>
+                    <span className="text-white text-sm font-bold">{userStats.storageUsed}% of 50GB</span>
                   </div>
-                  <Progress value={user.storageUsed} className="h-2 mb-2" />
+                  <Progress value={userStats.storageUsed} className="h-2 mb-2" />
                   <div className="flex justify-between text-white/70 text-xs">
                     <span>Free: 5GB → Premium: 50GB</span>
                     <Button variant="link" className="text-white/90 text-xs p-0 h-auto hover:text-white">
@@ -501,12 +675,12 @@ export default function Home() {
                 <div className="text-center">
                   <p className="text-white/90 text-sm font-medium mb-1">Family Vault</p>
                   <p className="text-white text-2xl font-bold">27.8GB</p>
-                  <p className="text-white/70 text-xs">Used by 5 members</p>
+                  <p className="text-white/70 text-xs">Used by {userStats.familyMembers} members</p>
                 </div>
                 
                 <div className="text-center">
                   <p className="text-white/90 text-sm font-medium mb-1">This Month</p>
-                  <p className="text-white text-2xl font-bold">+{user.monthlyUploads}</p>
+                  <p className="text-white text-2xl font-bold">+{userStats.monthlyUploads}</p>
                   <p className="text-white/70 text-xs">Documents added</p>
                 </div>
               </div>
@@ -733,11 +907,12 @@ export default function Home() {
                 
                 <div className="space-y-3">
                   {familyMembers.slice(0, 3).map((member) => (
-                    <div key={member.name} className="flex items-center justify-between">
+                    <div key={member.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
+                          <AvatarImage src={member.avatar_url || "/placeholder.svg"} alt={member.name} />
                           <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-                            {member.avatar}
+                            {member.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>
@@ -746,7 +921,7 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">{member.docs}</Badge>
+                        <Badge variant="secondary" className="text-xs">{member.document_count || 0} docs</Badge>
                         <div className={`w-2 h-2 rounded-full ${
                           member.status === 'active' ? 'bg-success' : 
                           member.status === 'pending' ? 'bg-warning' : 'bg-destructive'
@@ -790,98 +965,97 @@ export default function Home() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {recentDocuments.map((doc) => (
-              <Card key={doc.id} className="bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer group hover:scale-[1.02] relative">
-                {/* Version Badge */}
-                {doc.versions > 1 && (
-                  <div className="absolute -top-1 -left-1 bg-primary text-white text-xs px-2 py-1 rounded-br-xl rounded-tl-xl z-10 flex items-center gap-1">
-                    <RotateCcw className="w-3 h-3" />
-                    v{doc.versions}
-                  </div>
-                )}
-                
-                <CardContent className="p-5">
-                  <div className="w-full h-32 bg-muted rounded-xl mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
-                    <FileText className="w-12 h-12 text-primary" />
-                    <Badge className="absolute top-2 right-2 text-xs bg-primary/20 text-primary">
-                      {doc.category}
-                    </Badge>
-                    
-                    {/* Enhanced Document Info */}
-                    <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
-                      {doc.category === "Identity" && (
-                        <Badge className="bg-orange-500/20 text-orange-600 text-xs">Aadhaar</Badge>
-                      )}
-                      {doc.duplicates > 0 && (
-                        <Badge className="bg-warning/20 text-warning text-xs flex items-center gap-1">
-                          <Copy className="w-3 h-3" />
-                          {doc.duplicates} Similar
-                        </Badge>
-                      )}
-                      {doc.blockchain && (
-                        <Badge className="bg-success/20 text-success text-xs flex items-center gap-1">
-                          <Link className="w-3 h-3" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <h3 className="font-semibold text-sm text-foreground mb-2 truncate">{doc.title}</h3>
-                  <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{doc.aiSummary}</p>
-                  
-                  {/* Document Relationships */}
-                  {doc.relationships && (
-                    <div className="mb-3 flex items-center gap-2">
-                      <Badge className="bg-primary/10 text-primary text-xs flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        Linked to {doc.relationships}
-                      </Badge>
+            {recentDocs.length > 0 ? (
+              recentDocs.map((doc) => (
+                <Card key={doc.id} className="bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer group hover:scale-[1.02] relative">
+                  {/* Version Badge */}
+                  {doc.version > 1 && (
+                    <div className="absolute -top-1 -left-1 bg-primary text-white text-xs px-2 py-1 rounded-br-xl rounded-tl-xl z-10 flex items-center gap-1">
+                      <RotateCcw className="w-3 h-3" />
+                      v{doc.version}
                     </div>
                   )}
                   
-                  {/* Document Metadata */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                    <div className="flex items-center gap-2">
-                      <span>{doc.date}</span>
-                      <span>•</span>
-                      <span>{doc.size}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {doc.autoFolders?.map((folder, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          <Folder className="w-3 h-3 mr-1" />
-                          {folder}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="text-xs">
-                        {doc.type}
+                  <CardContent className="p-5">
+                    <div className="w-full h-32 bg-muted rounded-xl mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
+                      <FileText className="w-12 h-12 text-primary" />
+                      <Badge className="absolute top-2 right-2 text-xs bg-primary/20 text-primary">
+                        {doc.category}
                       </Badge>
-                      {doc.tags?.map((tag, i) => (
-                        <Badge key={i} variant="outline" className="text-[10px]">
-                          <Tag className="w-3 h-3 mr-1" />
-                          {tag}
+                      
+                      {/* Enhanced Document Info */}
+                      <div className="absolute bottom-2 left-2 flex flex-wrap gap-1">
+                        {doc.category === "Identity" && (
+                          <Badge className="bg-orange-500/20 text-orange-600 text-xs">Aadhaar</Badge>
+                        )}
+                        {doc.is_verified && (
+                          <Badge className="bg-success/20 text-success text-xs flex items-center gap-1">
+                            <Link className="w-3 h-3" />
+                            Verified
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <h3 className="font-semibold text-sm text-foreground mb-2 truncate">{doc.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{doc.ai_summary || 'Processing document...'}</p>
+                    
+                    {/* Document Metadata */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                      <div className="flex items-center gap-2">
+                        <span>{formatTimeAgo(doc.created_at)}</span>
+                        <span>•</span>
+                        <span>{formatFileSize(doc.size)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px]">
+                          <Folder className="w-3 h-3 mr-1" />
+                          {doc.category}
                         </Badge>
-                      ))}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
-                        <MessageCircle className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
-                        <Share2 className="w-3 h-3" />
-                      </Button>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {doc.file_type.toUpperCase()}
+                        </Badge>
+                        {doc.language_detected && (
+                          <Badge variant="outline" className="text-[10px]">
+                            <Languages className="w-3 h-3 mr-1" />
+                            {doc.language_detected}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
+                          <MessageCircle className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-primary">
+                          <Share2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-16">
+                <div className="w-20 h-20 bg-muted/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Upload className="w-10 h-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Documents Yet</h3>
+                <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+                  Start building your digital vault by uploading your first document. 
+                  We'll automatically organize and provide AI insights.
+                </p>
+                <Button onClick={() => navigate('/upload')} className="bg-primary text-white">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload Your First Document
+                </Button>
+              </div>
+            )}
           </div>
         </section>
 
@@ -915,28 +1089,37 @@ export default function Home() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        {React.createElement(aiInsights[currentInsight].icon, { className: "w-6 h-6" })}
+                        {React.createElement(getInsightIcon(aiInsights[currentInsight]?.insight_type || 'info'), { className: "w-6 h-6" })}
                       </div>
                       <div>
-                        <p className="text-white/90 text-sm font-medium capitalize">{aiInsights[currentInsight].type} Alert</p>
+                        <p className="text-white/90 text-sm font-medium capitalize">{aiInsights[currentInsight]?.insight_type || 'Info'} Alert</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge className={`bg-white/20 text-white border-white/30 text-xs ${
-                            aiInsights[currentInsight].priority === 'high' ? 'bg-destructive/20' : 
-                            aiInsights[currentInsight].priority === 'medium' ? 'bg-warning/20' : 'bg-success/20'
+                            aiInsights[currentInsight]?.priority === 'high' ? 'bg-destructive/20' : 
+                            aiInsights[currentInsight]?.priority === 'medium' ? 'bg-warning/20' : 'bg-success/20'
                           }`}>
-                            {aiInsights[currentInsight].priority} priority
+                            {aiInsights[currentInsight]?.priority || 'low'} priority
                           </Badge>
-                          <Badge className="bg-success/20 text-white border-success/30 text-xs">
-                            {aiInsights[currentInsight].savings}
-                          </Badge>
+                          {aiInsights[currentInsight]?.savings_potential && (
+                            <Badge className="bg-success/20 text-white border-success/30 text-xs">
+                              {aiInsights[currentInsight].savings_potential}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
                     <Button size="sm" className="bg-white text-primary hover:bg-white/90 font-semibold">
-                      {aiInsights[currentInsight].action}
+                      {aiInsights[currentInsight]?.action_required || 'View Details'}
                     </Button>
                   </div>
-                  <p className="text-lg font-medium mb-4">{aiInsights[currentInsight].text}</p>
+                  <p className="text-lg font-medium mb-4">
+                    {aiInsights[currentInsight]?.title || 'Processing your documents...'}
+                  </p>
+                  {aiInsights[currentInsight]?.description && (
+                    <p className="text-white/80 text-sm mb-4">
+                      {aiInsights[currentInsight].description}
+                    </p>
+                  )}
                   <div className="flex items-center justify-between">
                     <div className="flex gap-2">
                       {aiInsights.map((_, index) => (
@@ -965,19 +1148,26 @@ export default function Home() {
                       insight.priority === 'high' ? 'bg-destructive/10' : 
                       insight.priority === 'medium' ? 'bg-warning/10' : 'bg-success/10'
                     }`}>
-                      {React.createElement(insight.icon, { className: `w-5 h-5 ${insight.color}` })}
+                      {React.createElement(getInsightIcon(insight.insight_type), { 
+                        className: `w-5 h-5 ${getInsightColor(insight.priority)}` 
+                      })}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <p className="text-sm font-medium leading-relaxed">{insight.text}</p>
+                        <p className="text-sm font-medium leading-relaxed">{insight.title}</p>
                       </div>
+                      {insight.description && (
+                        <p className="text-xs text-muted-foreground mb-2">{insight.description}</p>
+                      )}
                       <div className="flex items-center justify-between">
                         <Button variant="ghost" size="sm" className="text-primary p-0 h-auto text-xs">
-                          {insight.action} →
+                          {insight.action_required || 'View Details'} →
                         </Button>
-                        <Badge className="bg-success/20 text-success text-xs">
-                          {insight.savings}
-                        </Badge>
+                        {insight.savings_potential && (
+                          <Badge className="bg-success/20 text-success text-xs">
+                            {insight.savings_potential}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1045,7 +1235,7 @@ export default function Home() {
                         <Clock className="w-6 h-6 text-white" />
                       </div>
                       <Badge variant="secondary" className="text-xs bg-destructive/20 text-destructive">
-                        {reminder.countdown}
+                        {formatReminderDate(reminder.reminder_date)}
                       </Badge>
                     </div>
                     <div className="flex-1">
@@ -1055,8 +1245,8 @@ export default function Home() {
                           URGENT
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2">{reminder.date}</p>
-                      <p className="text-sm font-medium text-primary mb-3">{reminder.amount}</p>
+                      <p className="text-xs text-muted-foreground mb-2">{new Date(reminder.reminder_date).toLocaleDateString()}</p>
+                      <p className="text-sm font-medium text-primary mb-3">{reminder.amount || 'Amount TBD'}</p>
                       <div className="flex gap-2">
                         <Button size="sm" className="bg-destructive text-white text-xs h-7 hover:bg-destructive/90">
                           Pay Now
@@ -1081,11 +1271,11 @@ export default function Home() {
                       <Badge className={`text-xs ${
                         reminder.urgency === 'medium' ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'
                       }`}>
-                        {reminder.countdown}
+                        {formatReminderDate(reminder.reminder_date)}
                       </Badge>
                     </div>
                     <h4 className="font-semibold text-sm mb-1">{reminder.title}</h4>
-                    <p className="text-xs text-muted-foreground mb-2">{reminder.amount}</p>
+                    <p className="text-xs text-muted-foreground mb-2">{reminder.amount || reminder.description || 'No details'}</p>
                     <Button size="sm" variant="outline" className="w-full text-xs h-7">
                       Schedule
                     </Button>
