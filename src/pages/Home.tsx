@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { 
-Bell, FileText, TrendingUp, Clock, AlertCircle, Search, Filter, 
-Upload, MessageCircle, Users, Shield, Star, ChevronRight,
-PieChart, Calendar, Award, Lock, Zap, BookOpen, User,
-BarChart3, Heart, Sparkles, Brain, Languages, Briefcase, Crown, Eye, Play,
-Headphones, Settings, Moon, Sun,
-Mail, Share2, Download, Copy, Trash2,
-Plus, RotateCcw,
-Link, Tag, Folder, Archive, Database,
-Image,
-Check, CheckCircle, Info, HelpCircle,
-Lightbulb, Calculator
+  Bell, FileText, TrendingUp, Clock, AlertCircle, Search, Filter, 
+  Upload, MessageCircle, Users, Shield, Star, ChevronRight,
+  PieChart, Calendar, Award, Lock, Zap, BookOpen, User,
+  BarChart3, Heart, Sparkles, Brain, Languages, Briefcase, Crown, Eye, Play,
+  Headphones, Settings, Moon, Sun,
+  Mail, Share2, Download, Copy, Trash2,
+  Plus, RotateCcw,
+  Link, Tag, Folder, Archive, Database,
+  Image,
+  Check, CheckCircle, Info, HelpCircle,
+  Lightbulb, Calculator, Bot, Globe, Clock3, Users2, ShieldCheck
 } from "lucide-react";
 import { TestApiButton } from "@/components/examples/TestApiButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -315,155 +315,369 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-background">
-      {/* Header with enhanced features */}
-      <div className="bg-gradient-to-br from-primary to-primary/80 text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Top row with user info and actions */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-12 h-12">
-                <AvatarImage src={userStats.avatar} />
-                <AvatarFallback>{userStats.name[0]}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h1 className="text-xl font-bold">Welcome back, {userStats.name}</h1>
-                <p className="text-white/80 text-sm">{userStats.totalDocs} documents • {userStats.tier} plan</p>
+    <div className="min-h-screen bg-background pb-20">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-hero text-white">
+        <div className="absolute inset-0 opacity-20"></div>
+        
+        <div className="relative max-w-7xl mx-auto px-6 py-20">
+          {/* Navigation Bar */}
+          <nav className="flex items-center justify-between mb-16">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
               </div>
+              <span className="text-2xl font-bold">DocuVault AI</span>
             </div>
             
-            <div className="flex items-center gap-3">
-              {/* Load Mock Data Button */}
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={toggleDarkMode}
+                variant="ghost"
+                size="sm"
+                className="text-white hover:bg-white/20"
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </Button>
+              
               <Button
                 onClick={handleLoadMockData}
                 variant="ghost"
                 size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white"
+                className="text-white hover:bg-white/20"
               >
                 <Database className="w-4 h-4 mr-2" />
-                Load Mock Data
-              </Button>
-              
-              <Button onClick={() => navigate('/upload')} className="bg-white text-primary hover:bg-white/90">
-                <Upload className="w-4 h-4 mr-2" />
-                Upload
+                Load Demo Data
               </Button>
               
               <NotificationCenter />
+              
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={userStats.avatar} />
+                <AvatarFallback>{userStats.name[0]}</AvatarFallback>
+              </Avatar>
             </div>
-          </div>
+          </nav>
 
-          {/* Enhanced search */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" />
-            <Input
-              placeholder="Search documents or ask AI..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 bg-white/20 border-white/30 text-white placeholder:text-white/70"
-            />
+          {/* Hero Content */}
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-8">
+              <div className="space-y-6">
+                <h1 className="text-6xl font-bold leading-tight">
+                  Your Documents,{" "}
+                  <span className="text-primary">Understood Instantly</span>
+                </h1>
+                
+                <p className="text-xl text-white/80 leading-relaxed">
+                  Stop losing important documents across emails, WhatsApp, and paper files. 
+                  DocuVault AI securely organizes, translates, and reminds you of everything that matters.
+                </p>
+              </div>
+
+              {/* Pain Points */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 text-white/90">
+                  <AlertCircle className="w-5 h-5 text-warning" />
+                  <span className="text-sm">Missed renewals & deadlines</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/90">
+                  <Globe className="w-5 h-5 text-warning" />
+                  <span className="text-sm">Language barriers</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/90">
+                  <Archive className="w-5 h-5 text-warning" />
+                  <span className="text-sm">Scattered documents</span>
+                </div>
+                <div className="flex items-center gap-3 text-white/90">
+                  <Clock3 className="w-5 h-5 text-warning" />
+                  <span className="text-sm">Time-consuming searches</span>
+                </div>
+              </div>
+
+              {/* CTAs */}
+              <div className="flex items-center gap-4">
+                <Button 
+                  size="lg" 
+                  className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  onClick={() => navigate('/upload')}
+                >
+                  Start Free Trial
+                </Button>
+                
+                <Button 
+                  size="lg" 
+                  variant="outline" 
+                  className="border-white/30 text-white hover:bg-white/10 px-8 py-4 text-lg font-semibold"
+                >
+                  Watch Demo
+                  <Play className="w-5 h-5 ml-2" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Hero Visual */}
+            <div className="relative">
+              <div className="relative z-10 bg-white/10 backdrop-blur-lg rounded-3xl p-8 shadow-2xl">
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                    <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-white/20 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <FileText className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">Insurance Policy</span>
+                      </div>
+                      <p className="text-xs text-white/70">Renewal due: March 15, 2024</p>
+                    </div>
+                    
+                    <div className="bg-white/20 rounded-lg p-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Bot className="w-5 h-5 text-primary" />
+                        <span className="text-sm font-medium">AI Summary</span>
+                      </div>
+                      <p className="text-xs text-white/70">Key terms extracted, reminder set</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Background decoration */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent rounded-3xl transform rotate-6 scale-105"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Quick Actions */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/upload')}>
-              <CardContent className="p-6 text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <h3 className="font-semibold">Upload</h3>
-                <p className="text-sm text-muted-foreground">Add documents</p>
+      {/* Core Features Section */}
+      <section className="py-24 bg-background">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              AI-Powered Document Intelligence
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Experience the future of document management with our advanced AI that understands, 
+              organizes, and protects your most important information.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* AI Summarization */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Brain className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Smart Summarization</h3>
+                <p className="text-muted-foreground mb-4">
+                  Extract key information like medical diagnoses, legal deadlines, and insurance details automatically.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  Medical reports • Legal contracts • Insurance policies
+                </div>
               </CardContent>
             </Card>
-            
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/chat')}>
-              <CardContent className="p-6 text-center">
-                <MessageCircle className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <h3 className="font-semibold">AI Chat</h3>
-                <p className="text-sm text-muted-foreground">Ask questions</p>
+
+            {/* Multi-language Translation */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Languages className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">15+ Language Support</h3>
+                <p className="text-muted-foreground mb-4">
+                  Understand documents in Hindi, Tamil, Bengali, and more with instant translation.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  Hindi • Tamil • Bengali • Gujarati • Marathi
+                </div>
               </CardContent>
             </Card>
-            
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/family-vault')}>
-              <CardContent className="p-6 text-center">
-                <Users className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <h3 className="font-semibold">Family Vault</h3>
-                <p className="text-sm text-muted-foreground">Share securely</p>
+
+            {/* Conversational AI */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <MessageCircle className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">AI Chat Assistant</h3>
+                <p className="text-muted-foreground mb-4">
+                  Ask natural language questions about your documents and get instant answers.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  Voice queries • Rich responses • Context-aware
+                </div>
               </CardContent>
             </Card>
-            
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/categories')}>
-              <CardContent className="p-6 text-center">
-                <Folder className="w-8 h-8 mx-auto mb-2 text-primary" />
-                <h3 className="font-semibold">Browse</h3>
-                <p className="text-sm text-muted-foreground">View all docs</p>
+
+            {/* Smart Reminders */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Clock className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Intelligent Reminders</h3>
+                <p className="text-muted-foreground mb-4">
+                  Never miss important dates with AI-powered deadline extraction and calendar sync.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  Auto-detection • Calendar sync • Custom alerts
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Family Vault */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Users2 className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Family Document Vault</h3>
+                <p className="text-muted-foreground mb-4">
+                  Securely share and manage family documents with role-based access control.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  Role-based access • Secure sharing • Family profiles
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security */}
+            <Card className="group hover:shadow-large transition-all duration-300 hover:-translate-y-2 border-0 shadow-medium">
+              <CardContent className="p-8">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <ShieldCheck className="w-6 h-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Enterprise Security</h3>
+                <p className="text-muted-foreground mb-4">
+                  Bank-grade encryption with compliance standards to protect your sensitive documents.
+                </p>
+                <div className="text-sm text-primary font-medium">
+                  End-to-end encryption • GDPR compliant • SOC 2 certified
+                </div>
               </CardContent>
             </Card>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Recent Documents */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold">Recent Documents</h2>
-            <Button variant="ghost" onClick={() => navigate('/categories')}>
-              View All
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-          
-          {recentDocs.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-                <p className="text-muted-foreground mb-4">Upload your first document to get started</p>
-                <Button onClick={() => navigate('/upload')}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload Document
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {recentDocs.slice(0, 8).map((doc) => (
-                <Card key={doc.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/document/${doc.id}`)}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <FileText className="w-6 h-6 text-primary" />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{doc.name}</h3>
-                        <p className="text-xs text-muted-foreground">{doc.category || 'Uncategorized'}</p>
-                      </div>
+      {/* Recent Documents & Quick Actions */}
+      <section className="py-16 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Quick Actions */}
+            <div className="lg:col-span-1">
+              <h3 className="text-2xl font-bold mb-6">Quick Actions</h3>
+              <div className="space-y-4">
+                <Card className="cursor-pointer hover:shadow-medium transition-all duration-300 hover:scale-105" onClick={() => navigate('/upload')}>
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-primary" />
                     </div>
-                    <Badge variant="default" className="text-xs">
-                      Processed
-                    </Badge>
+                    <div>
+                      <h4 className="font-semibold">Upload Documents</h4>
+                      <p className="text-sm text-muted-foreground">Add new files</p>
+                    </div>
                   </CardContent>
                 </Card>
-              ))}
+                
+                <Card className="cursor-pointer hover:shadow-medium transition-all duration-300 hover:scale-105" onClick={() => navigate('/chat')}>
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <MessageCircle className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">AI Assistant</h4>
+                      <p className="text-sm text-muted-foreground">Ask questions</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="cursor-pointer hover:shadow-medium transition-all duration-300 hover:scale-105" onClick={() => navigate('/family-vault')}>
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                      <Users className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">Family Vault</h4>
+                      <p className="text-sm text-muted-foreground">Share securely</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          )}
-        </section>
 
-        {/* AI Insights */}
-        {aiInsights.length > 0 && (
-          <section className="mb-8">
-            <h2 className="text-2xl font-bold mb-6">AI Insights</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Recent Documents */}
+            <div className="lg:col-span-2">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold">Recent Documents</h3>
+                <Button variant="ghost" onClick={() => navigate('/categories')}>
+                  View All
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+              
+              {recentDocs.length === 0 ? (
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <FileText className="w-16 h-16 mx-auto mb-6 text-muted-foreground" />
+                    <h4 className="text-xl font-semibold mb-3">No documents yet</h4>
+                    <p className="text-muted-foreground mb-6">Upload your first document to get started</p>
+                    <Button onClick={() => navigate('/upload')} size="lg">
+                      <Upload className="w-5 h-5 mr-2" />
+                      Upload Document
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {recentDocs.slice(0, 6).map((doc) => (
+                    <Card key={doc.id} className="cursor-pointer hover:shadow-medium transition-all duration-300 hover:scale-105" onClick={() => navigate(`/document/${doc.id}`)}>
+                      <CardContent className="p-6">
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium truncate">{doc.name}</h4>
+                            <p className="text-sm text-muted-foreground">{doc.category || 'Uncategorized'}</p>
+                          </div>
+                        </div>
+                        <Badge variant="default" className="text-xs">
+                          Processed
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* AI Insights */}
+      {aiInsights.length > 0 && (
+        <section className="py-16 bg-background">
+          <div className="max-w-7xl mx-auto px-6">
+            <h3 className="text-2xl font-bold mb-6">AI Insights & Recommendations</h3>
+            <div className="grid md:grid-cols-2 gap-6">
               {aiInsights.slice(0, 4).map((insight) => (
-                <Card key={insight.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="w-5 h-5 text-warning mt-1" />
-                      <div>
-                        <h3 className="font-semibold">{insight.title}</h3>
-                        <p className="text-sm text-muted-foreground">{insight.description}</p>
+                <Card key={insight.id} className="hover:shadow-medium transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 bg-warning/10 rounded-lg flex items-center justify-center mt-1">
+                        <AlertCircle className="w-5 h-5 text-warning" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-2">{insight.title}</h4>
+                        <p className="text-sm text-muted-foreground mb-3">{insight.description}</p>
                         {insight.savings_potential && (
-                          <Badge className="mt-2">
+                          <Badge className="bg-success/10 text-success hover:bg-success/20">
                             Save ₹{insight.savings_potential}
                           </Badge>
                         )}
@@ -473,54 +687,116 @@ export default function Home() {
                 </Card>
               ))}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
+      )}
 
-        {/* External Integrations */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">Connect & Sync</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Mail className="w-8 h-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Gmail Integration</h3>
-                    <p className="text-sm text-muted-foreground">Auto-import attachments</p>
-                  </div>
-                </div>
-                <Button className="w-full">Connect Gmail</Button>
+      {/* Testimonials */}
+      <section className="py-24 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Trusted by Thousands of Families
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              See how DocuVault AI is transforming document management across India
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="text-center">
+              <CardContent className="p-8">
+                <Avatar className="w-16 h-16 mx-auto mb-4">
+                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarFallback>PS</AvatarFallback>
+                </Avatar>
+                <blockquote className="text-lg mb-4">
+                  "DocuVault AI saved me hours during tax season. All my documents were automatically categorized and the AI found deductions I missed!"
+                </blockquote>
+                <div className="text-sm font-medium">Priya Sharma</div>
+                <div className="text-sm text-muted-foreground">Chartered Accountant, Mumbai</div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Database className="w-8 h-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">DigiLocker</h3>
-                    <p className="text-sm text-muted-foreground">Sync government docs</p>
-                  </div>
-                </div>
-                <Button className="w-full">Connect DigiLocker</Button>
+            <Card className="text-center">
+              <CardContent className="p-8">
+                <Avatar className="w-16 h-16 mx-auto mb-4">
+                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarFallback>RK</AvatarFallback>
+                </Avatar>
+                <blockquote className="text-lg mb-4">
+                  "Finally, a solution that understands Hindi documents! The family vault feature keeps our entire family organized."
+                </blockquote>
+                <div className="text-sm font-medium">Rajesh Kumar</div>
+                <div className="text-sm text-muted-foreground">Business Owner, Delhi</div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Calendar className="w-8 h-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">Calendar Sync</h3>
-                    <p className="text-sm text-muted-foreground">Reminder integration</p>
-                  </div>
-                </div>
-                <Button className="w-full">Connect Calendar</Button>
+            <Card className="text-center">
+              <CardContent className="p-8">
+                <Avatar className="w-16 h-16 mx-auto mb-4">
+                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarFallback>AN</AvatarFallback>
+                </Avatar>
+                <blockquote className="text-lg mb-4">
+                  "Never missed an insurance renewal again. The AI reminds me weeks in advance and explains complex policy terms."
+                </blockquote>
+                <div className="text-sm font-medium">Anita Nair</div>
+                <div className="text-sm text-muted-foreground">Healthcare Professional, Bangalore</div>
               </CardContent>
             </Card>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 bg-gradient-hero text-white">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-4xl font-bold mb-6">
+            Ready to Transform Your Document Management?
+          </h2>
+          <p className="text-xl text-white/80 mb-8">
+            Join thousands of families and professionals who trust DocuVault AI with their most important documents.
+          </p>
+          
+          <div className="flex items-center justify-center gap-6">
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+              onClick={() => navigate('/upload')}
+            >
+              Start Your Free Trial
+            </Button>
+            
+            <div className="text-left">
+              <div className="text-sm text-white/80">✓ No credit card required</div>
+              <div className="text-sm text-white/80">✓ 30-day free trial</div>
+              <div className="text-sm text-white/80">✓ Enterprise-grade security</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer Placeholder */}
+      <footer className="py-12 bg-background border-t">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-lg font-bold">DocuVault AI</span>
+            </div>
+            
+            <div className="flex items-center gap-6 text-sm text-muted-foreground">
+              <span>Features</span>
+              <span>Pricing</span>
+              <span>About</span>
+              <span>Support</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
