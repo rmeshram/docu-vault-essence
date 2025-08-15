@@ -8,30 +8,30 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* DocuVault AI Design System - Luxury Minimalist Aesthetic */
-    --background: 0 0% 100%; /* Pure White */
-    --foreground: 230 25% 18%; /* Deep Indigo #1E1E2F */
+    /* DocuVault AI Design System - Elegant Purple Theme with Material Design 3 */
+    --background: 0 0% 99%; /* Soft White #FCFCFC */
+    --foreground: 260 8% 14%; /* Deep Purple Grey #1E1B2E */
 
     --card: 0 0% 100%;
-    --card-foreground: 230 25% 18%;
+    --card-foreground: 260 8% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 230 25% 18%;
+    --popover-foreground: 260 8% 14%;
 
-    /* Primary: Teal #00C4B4 */
-    --primary: 172 100% 38%; /* #00C4B4 */
+    /* Primary: Royal Purple #7C3AED */
+    --primary: 262 83% 58%; /* #7C3AED */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light Grey #F8FAFC */
-    --secondary: 210 20% 98%; /* #F8FAFC */
-    --secondary-foreground: 230 25% 18%;
+    /* Secondary: Lavender Purple #E4D4F4 */
+    --secondary: 266 44% 91%; /* #E4D4F4 */
+    --secondary-foreground: 260 8% 14%;
 
-    /* Accent: Deep Indigo #1E1E2F */
-    --accent: 230 25% 18%; /* #1E1E2F */
+    /* Accent: Vibrant Purple #A855F7 */
+    --accent: 262 80% 64%; /* #A855F7 */
     --accent-foreground: 0 0% 100%;
 
-    --muted: 210 20% 98%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 264 40% 96%;
+    --muted-foreground: 264 15% 55%;
 
     /* Success: Emerald Green #10B981 */
     --success: 158 64% 52%; /* #10B981 */
@@ -45,22 +45,23 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%; /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 210 20% 98%;
-    --ring: 172 100% 38%;
+    --border: 264 40% 90%;
+    --input: 264 40% 94%;
+    --ring: 262 83% 58%;
 
-    /* Luxury Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(172 100% 38%), hsl(180 84% 42%));
-    --gradient-hero: linear-gradient(135deg, hsl(230 25% 18%), hsl(230 35% 25%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 20% 99%));
-    --gradient-accent: linear-gradient(135deg, hsl(172 100% 38%), hsl(160 84% 39%));
+    /* Gradients - Rich Purple Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(270 75% 65%));
+    --gradient-secondary: linear-gradient(135deg, hsl(266 44% 91%), hsl(272 35% 85%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(264 40% 98%));
+    --gradient-header: linear-gradient(135deg, hsl(262 83% 58%), hsl(270 75% 65%));
+    --gradient-accent: linear-gradient(135deg, hsl(262 80% 64%), hsl(277 85% 70%));
     
-    /* Premium Shadows */
-    --shadow-soft: 0 1px 3px 0 hsl(230 25% 18% / 0.08), 0 1px 2px 0 hsl(230 25% 18% / 0.04);
-    --shadow-medium: 0 4px 6px -1px hsl(230 25% 18% / 0.10), 0 2px 4px -1px hsl(230 25% 18% / 0.06);
-    --shadow-large: 0 10px 15px -3px hsl(230 25% 18% / 0.12), 0 4px 6px -2px hsl(230 25% 18% / 0.08);
-    --shadow-elegant: 0 20px 25px -5px hsl(230 25% 18% / 0.10), 0 10px 10px -5px hsl(230 25% 18% / 0.04);
-    --shadow-glow: 0 0 40px hsl(172 100% 38% / 0.15);
+    /* Shadows - Modern Material Design 3 */
+    --shadow-soft: 0 1px 3px 0 hsl(262 83% 58% / 0.12), 0 1px 2px 0 hsl(262 83% 58% / 0.06);
+    --shadow-medium: 0 4px 6px -1px hsl(262 83% 58% / 0.15), 0 2px 4px -1px hsl(262 83% 58% / 0.08);
+    --shadow-large: 0 10px 15px -3px hsl(262 83% 58% / 0.18), 0 4px 6px -2px hsl(262 83% 58% / 0.10);
+    --shadow-elegant: 0 20px 25px -5px hsl(262 83% 58% / 0.12), 0 10px 10px -5px hsl(262 83% 58% / 0.04);
+    --shadow-glow: 0 0 40px hsl(262 80% 64% / 0.3);
 
     --radius: 1rem;
 
@@ -82,26 +83,26 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* Dark mode - Luxury Dark Theme */
-    --background: 230 25% 8%; /* Midnight Black #0D0D14 */
+    /* Dark mode with deep purple background */
+    --background: 260 15% 8%; /* Deep Purple Black #0F0D15 */
     --foreground: 0 0% 98%;
 
-    --card: 230 25% 10%;
+    --card: 260 15% 10%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 230 25% 10%;
+    --popover: 260 15% 10%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 172 100% 38%; /* #00C4B4 */
+    --primary: 262 80% 64%; /* #A855F7 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 230 25% 15%;
+    --secondary: 264 30% 18%;
     --secondary-foreground: 0 0% 98%;
 
-    --muted: 230 25% 12%;
-    --muted-foreground: 215 16% 65%;
+    --muted: 264 20% 14%;
+    --muted-foreground: 264 15% 65%;
 
-    --accent: 172 100% 38%;
+    --accent: 270 75% 65%;
     --accent-foreground: 0 0% 100%;
 
     --success: 158 64% 52%;
@@ -113,12 +114,12 @@ All colors MUST be HSL.
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 230 25% 20%;
-    --input: 230 25% 12%;
-    --ring: 172 100% 38%;
+    --border: 264 20% 20%;
+    --input: 264 20% 16%;
+    --ring: 262 80% 64%;
     
-    --gradient-card: linear-gradient(145deg, hsl(230 25% 10%), hsl(230 25% 12%));
-    --gradient-hero: linear-gradient(135deg, hsl(230 25% 18%), hsl(230 35% 25%));
+    --gradient-card: linear-gradient(145deg, hsl(260 15% 10%), hsl(264 20% 12%));
+    --gradient-header: linear-gradient(135deg, hsl(262 80% 64%), hsl(270 75% 65%));
     
     --sidebar-background: 260 15% 8%;
     --sidebar-foreground: 0 0% 98%;
