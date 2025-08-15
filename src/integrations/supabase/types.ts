@@ -263,6 +263,7 @@ export type Database = {
           created_at: string | null
           extracted_text: string | null
           file_type: string | null
+          file_url: string | null
           id: string
           is_encrypted: boolean | null
           is_verified: boolean | null
@@ -277,6 +278,7 @@ export type Database = {
           size: number
           status: string | null
           storage_path: string | null
+          tags: Json | null
           thumbnail_url: string | null
           updated_at: string | null
           upload_method: string | null
@@ -291,6 +293,7 @@ export type Database = {
           created_at?: string | null
           extracted_text?: string | null
           file_type?: string | null
+          file_url?: string | null
           id?: string
           is_encrypted?: boolean | null
           is_verified?: boolean | null
@@ -305,6 +308,7 @@ export type Database = {
           size: number
           status?: string | null
           storage_path?: string | null
+          tags?: Json | null
           thumbnail_url?: string | null
           updated_at?: string | null
           upload_method?: string | null
@@ -319,6 +323,7 @@ export type Database = {
           created_at?: string | null
           extracted_text?: string | null
           file_type?: string | null
+          file_url?: string | null
           id?: string
           is_encrypted?: boolean | null
           is_verified?: boolean | null
@@ -333,6 +338,7 @@ export type Database = {
           size?: number
           status?: string | null
           storage_path?: string | null
+          tags?: Json | null
           thumbnail_url?: string | null
           updated_at?: string | null
           upload_method?: string | null
@@ -676,6 +682,7 @@ export type Database = {
         | "Personal"
         | "Business"
         | "Tax"
+        | "Personal Documents"
       document_status: "uploading" | "processing" | "completed" | "error"
       family_role: "owner" | "admin" | "member" | "viewer"
       family_status: "pending" | "accepted" | "rejected" | "suspended"
@@ -832,6 +839,7 @@ export const Constants = {
         "Personal",
         "Business",
         "Tax",
+        "Personal Documents",
       ],
       document_status: ["uploading", "processing", "completed", "error"],
       family_role: ["owner", "admin", "member", "viewer"],
