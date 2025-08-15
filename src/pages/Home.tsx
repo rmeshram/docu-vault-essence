@@ -317,7 +317,7 @@ export default function Home() {
   return (
     <div className="min-h-screen pb-20 bg-background">
       {/* Header with enhanced features */}
-      <div className="bg-gradient-header text-white p-6">
+      <div className="bg-gradient-to-br from-primary to-primary/80 text-white p-6">
         <div className="max-w-7xl mx-auto">
           {/* Top row with user info and actions */}
           <div className="flex items-center justify-between mb-6">
