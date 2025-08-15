@@ -246,7 +246,7 @@ export default function Upload() {
           console.log(`Calling uploadDocument for ${f.name}`)
           
           const result = await uploadDocument(f.file, {
-            category: selectedCategory || undefined,
+            category: selectedCategory === 'auto' ? undefined : selectedCategory,
             tags: f.tags,
             enableAI: enableAI,
             enableOCR: true
@@ -420,7 +420,7 @@ export default function Upload() {
       // Retry with real backend call
       try {
         const result = await uploadDocument(file.file, {
-          category: selectedCategory || undefined,
+          category: selectedCategory === 'auto' ? undefined : selectedCategory,
           tags: file.tags,
           enableAI: enableAI,
           enableOCR: true
@@ -638,8 +638,8 @@ export default function Upload() {
                         <SelectTrigger className="h-10">
                           <SelectValue placeholder="Auto-categorize" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">Auto-categorize</SelectItem>
+                         <SelectContent>
+                           <SelectItem value="auto">Auto-categorize</SelectItem>
                           {categories.map((category) => (
                             <SelectItem key={category.name} value={category.name}>
                               {category.name}

@@ -52,7 +52,8 @@ export default function FamilyVault() {
     usedStorage: 0,
     sharedDocuments: 0,
     activeMembers: 0,
-    pendingInvites: 0
+    pendingInvites: 0,
+    storagePercentage: 0
   });
   
   const [loading, setLoading] = useState(true);
@@ -78,8 +79,8 @@ export default function FamilyVault() {
         ]);
 
         setFamilyMembers(members || []);
-        setVaultStats({ ...stats, sharedDocuments: documents?.length || 0 });
-        setSharedDocuments(documents?.filter(doc => doc.shared_with_family) || []);
+        const statsWithSharedDocs = { ...stats, sharedDocuments: documents?.length || 0 };
+        setVaultStats(statsWithSharedDocs);
 
         // Mock emergency contacts for now
         setEmergencyContacts([
@@ -245,9 +246,9 @@ export default function FamilyVault() {
   };
 
   const filteredMembers = familyMembers.filter(member => {
-    const matchesSearch = member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         member.email?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = selectedRole === 'all' || member.role === selectedRole;
+          const matchesSearch = member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         member.user_profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchesRole = selectedRole === 'all' || member.role === selectedRole;
     return matchesSearch && matchesRole;
   });
 

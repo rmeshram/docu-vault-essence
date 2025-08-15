@@ -258,6 +258,7 @@ export type Database = {
         Row: {
           ai_confidence: number | null
           ai_summary: string | null
+          ai_tags: string[] | null
           category: Database["public"]["Enums"]["document_category"] | null
           created_at: string | null
           extracted_text: string | null
@@ -266,10 +267,15 @@ export type Database = {
           is_encrypted: boolean | null
           is_verified: boolean | null
           language_detected: string | null
+          mime_type: string | null
           name: string
+          ocr_confidence: number | null
           pages: number | null
           parent_document_id: string | null
+          path: string | null
+          shared_with_family: boolean | null
           size: number
+          status: string | null
           storage_path: string | null
           thumbnail_url: string | null
           updated_at: string | null
@@ -280,6 +286,7 @@ export type Database = {
         Insert: {
           ai_confidence?: number | null
           ai_summary?: string | null
+          ai_tags?: string[] | null
           category?: Database["public"]["Enums"]["document_category"] | null
           created_at?: string | null
           extracted_text?: string | null
@@ -288,10 +295,15 @@ export type Database = {
           is_encrypted?: boolean | null
           is_verified?: boolean | null
           language_detected?: string | null
+          mime_type?: string | null
           name: string
+          ocr_confidence?: number | null
           pages?: number | null
           parent_document_id?: string | null
+          path?: string | null
+          shared_with_family?: boolean | null
           size: number
+          status?: string | null
           storage_path?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
@@ -302,6 +314,7 @@ export type Database = {
         Update: {
           ai_confidence?: number | null
           ai_summary?: string | null
+          ai_tags?: string[] | null
           category?: Database["public"]["Enums"]["document_category"] | null
           created_at?: string | null
           extracted_text?: string | null
@@ -310,10 +323,15 @@ export type Database = {
           is_encrypted?: boolean | null
           is_verified?: boolean | null
           language_detected?: string | null
+          mime_type?: string | null
           name?: string
+          ocr_confidence?: number | null
           pages?: number | null
           parent_document_id?: string | null
+          path?: string | null
+          shared_with_family?: boolean | null
           size?: number
+          status?: string | null
           storage_path?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null

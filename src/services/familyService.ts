@@ -15,10 +15,15 @@ export interface FamilyMember {
   };
   storage_used_mb: number;
   document_count: number;
-  name: string;
+  name?: string;
   avatar_url?: string;
   joined_at: string;
   last_active?: string;
+  user_profiles?: {
+    name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
 }
 
 export interface FamilyVault {
