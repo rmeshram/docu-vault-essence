@@ -63,12 +63,12 @@ CREATE INDEX IF NOT EXISTS idx_documents_tags ON documents USING GIN(tags);
 
 -- Insert mock categories
 INSERT INTO categories (id, user_id, name, description, icon, color, document_count) VALUES
-  ('550e8400-e29b-41d4-a716-446655440001', (SELECT auth.uid()), 'Financial Documents', 'Bank statements, tax returns, invoices', 'DollarSign', '#10B981', 8),
-  ('550e8400-e29b-41d4-a716-446655440002', (SELECT auth.uid()), 'Legal Documents', 'Contracts, agreements, legal papers', 'Scale', '#3B82F6', 5),
-  ('550e8400-e29b-41d4-a716-446655440003', (SELECT auth.uid()), 'Personal Documents', 'ID cards, passports, certificates', 'User', '#8B5CF6', 12),
+  ('550e8400-e29b-41d4-a716-446655440001', (SELECT auth.uid()), 'Financial', 'Bank statements, tax returns, invoices', 'DollarSign', '#10B981', 8),
+  ('550e8400-e29b-41d4-a716-446655440002', (SELECT auth.uid()), 'Legal', 'Contracts, agreements, legal papers', 'Scale', '#3B82F6', 5),
+  ('550e8400-e29b-41d4-a716-446655440003', (SELECT auth.uid()), 'Personal', 'ID cards, passports, certificates', 'User', '#8B5CF6', 12),
   ('550e8400-e29b-41d4-a716-446655440004', (SELECT auth.uid()), 'Medical Records', 'Health reports, prescriptions, insurance', 'Heart', '#EF4444', 6),
   ('550e8400-e29b-41d4-a716-446655440005', (SELECT auth.uid()), 'Insurance', 'Insurance policies and claims', 'Shield', '#F59E0B', 4),
-  ('550e8400-e29b-41d4-a716-446655440006', (SELECT auth.uid()), 'Property Documents', 'Real estate, property papers', 'Home', '#06B6D4', 3)
+  ('550e8400-e29b-41d4-a716-446655440006', (SELECT auth.uid()), 'Property', 'Real estate, property papers', 'Home', '#06B6D4', 3)
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,
   description = EXCLUDED.description,
@@ -76,29 +76,28 @@ ON CONFLICT (id) DO UPDATE SET
   color = EXCLUDED.color,
   document_count = EXCLUDED.document_count;
 
--- Insert mock documents with realistic file URLs
-INSERT INTO documents (id, user_id, name, category, mime_type, size, tags, file_url, download_url, ai_summary, extracted_text, status, created_at, updated_at) VALUES
+-- InseINSERT INTO documents (id, user_id, name, category, mime_type, size, tags, file_url, download_url, ai_summary, extracted_text, status, created_at, updated_at) VALUES
   -- Financial Documents
   ('660e8400-e29b-41d4-a716-446655440001', (SELECT auth.uid()), 'Bank Statement - January 2024', 'Financial', 'application/pdf', 2048576, '["bank", "statement", "2024", "january"]'::jsonb, 'https://example.com/files/bank-statement-jan-2024.pdf', 'https://example.com/download/bank-statement-jan-2024.pdf', 'Bank statement showing transactions for January 2024 with ending balance of $5,240.', 'BANK STATEMENT January 2024 Beginning Balance: $4,890 Ending Balance: $5,240', 'completed', now() - interval '30 days', now() - interval '30 days'),
   ('660e8400-e29b-41d4-a716-446655440002', (SELECT auth.uid()), 'Tax Return 2023', 'Financial', 'application/pdf', 1536000, '["tax", "return", "2023", "income"]'::jsonb, 'https://example.com/files/tax-return-2023.pdf', 'https://example.com/download/tax-return-2023.pdf', 'Complete tax return for 2023 showing total income of $75,000 and tax owed of $8,200.', 'FORM 1040 Tax Year 2023 Total Income: $75,000 Tax Owed: $8,200', 'completed', now() - interval '60 days', now() - interval '60 days'),
   ('660e8400-e29b-41d4-a716-446655440003', (SELECT auth.uid()), 'Investment Portfolio Summary', 'Financial', 'application/pdf', 1024000, '["investment", "portfolio", "stocks", "bonds"]'::jsonb, 'https://example.com/files/investment-summary.pdf', 'https://example.com/download/investment-summary.pdf', 'Investment portfolio summary showing total value of $125,000 across stocks and bonds.', 'INVESTMENT SUMMARY Total Portfolio Value: $125,000 Stocks: 60% Bonds: 40%', 'completed', now() - interval '15 days', now() - interval '15 days'),
   
-  -- Legal Documents
+  -- Legal
   ('660e8400-e29b-41d4-a716-446655440004', (SELECT auth.uid()), 'Employment Contract', 'Legal', 'application/pdf', 800000, '["employment", "contract", "agreement", "salary"]'::jsonb, 'https://example.com/files/employment-contract.pdf', 'https://example.com/download/employment-contract.pdf', 'Employment contract with ABC Corp starting salary $80,000 annually.', 'EMPLOYMENT AGREEMENT ABC Corporation Salary: $80,000 per year Start Date: January 15, 2024', 'completed', now() - interval '45 days', now() - interval '45 days'),
   ('660e8400-e29b-41d4-a716-446655440005', (SELECT auth.uid()), 'Rental Agreement', 'Legal', 'application/pdf', 1200000, '["rental", "lease", "apartment", "monthly"]'::jsonb, 'https://example.com/files/rental-agreement.pdf', 'https://example.com/download/rental-agreement.pdf', 'Rental agreement for 2-bedroom apartment at $2,400 per month.', 'RENTAL LEASE AGREEMENT Property: 123 Main St, Apt 4B Monthly Rent: $2,400', 'completed', now() - interval '90 days', now() - interval '90 days'),
   
-  -- Personal Documents
+  -- Personal
   ('660e8400-e29b-41d4-a716-446655440006', (SELECT auth.uid()), 'Passport Copy', 'Personal', 'image/jpeg', 512000, '["passport", "travel", "identity", "official"]'::jsonb, 'https://example.com/files/passport-copy.jpg', 'https://example.com/download/passport-copy.jpg', 'Digital copy of passport valid until 2029 for international travel.', 'PASSPORT USA Valid Until: 2029-06-15 Passport Number: 123456789', 'completed', now() - interval '20 days', now() - interval '20 days'),
   ('660e8400-e29b-41d4-a716-446655440007', (SELECT auth.uid()), 'Birth Certificate', 'Personal', 'application/pdf', 600000, '["birth", "certificate", "official", "document"]'::jsonb, 'https://example.com/files/birth-certificate.pdf', 'https://example.com/download/birth-certificate.pdf', 'Official birth certificate issued by state registry.', 'CERTIFICATE OF BIRTH State of California Date of Birth: 1990-05-15', 'completed', now() - interval '25 days', now() - interval '25 days'),
   
-  -- Medical Records
+  -- Medical
   ('660e8400-e29b-41d4-a716-446655440008', (SELECT auth.uid()), 'Annual Health Checkup', 'Medical', 'application/pdf', 700000, '["health", "checkup", "medical", "report"]'::jsonb, 'https://example.com/files/health-checkup.pdf', 'https://example.com/download/health-checkup.pdf', 'Annual health checkup report showing good overall health with minor recommendations.', 'HEALTH REPORT Overall Health: Good Blood Pressure: 120/80 Cholesterol: Normal', 'completed', now() - interval '10 days', now() - interval '10 days'),
   ('660e8400-e29b-41d4-a716-446655440009', (SELECT auth.uid()), 'Prescription Record', 'Medical', 'application/pdf', 300000, '["prescription", "medication", "doctor", "pharmacy"]'::jsonb, 'https://example.com/files/prescription.pdf', 'https://example.com/download/prescription.pdf', 'Prescription for blood pressure medication, 30-day supply.', 'PRESCRIPTION Medication: Lisinopril 10mg Quantity: 30 tablets', 'completed', now() - interval '5 days', now() - interval '5 days'),
   
   -- Insurance
   ('660e8400-e29b-41d4-a716-446655440010', (SELECT auth.uid()), 'Auto Insurance Policy', 'Insurance', 'application/pdf', 900000, '["auto", "insurance", "policy", "coverage"]'::jsonb, 'https://example.com/files/auto-insurance.pdf', 'https://example.com/download/auto-insurance.pdf', 'Auto insurance policy with comprehensive coverage, $500 deductible.', 'AUTO INSURANCE POLICY Coverage: Comprehensive Deductible: $500 Premium: $1,200/year', 'completed', now() - interval '35 days', now() - interval '35 days'),
   
-  -- Property Documents
+  -- Property
   ('660e8400-e29b-41d4-a716-446655440011', (SELECT auth.uid()), 'House Deed', 'Property', 'application/pdf', 1100000, '["deed", "property", "house", "ownership"]'::jsonb, 'https://example.com/files/house-deed.pdf', 'https://example.com/download/house-deed.pdf', 'Property deed for 3-bedroom house at 456 Oak Street purchased for $350,000.', 'PROPERTY DEED Address: 456 Oak Street Purchase Price: $350,000 Date: 2022-03-15', 'completed', now() - interval '50 days', now() - interval '50 days')
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,

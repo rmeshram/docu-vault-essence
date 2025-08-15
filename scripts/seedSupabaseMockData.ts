@@ -4,9 +4,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL="https://your-project.supabase.co"
-const SUPABASE_KEY="your-service-role-key"
+const SUPABASE_URL = 'https://kbwyocwpyxncnwmywama.supabase.co'
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtid3lvY3dweXhuY253bXl3YW1hIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTA2NTY1NiwiZXhwIjoyMDcwNjQxNjU2fQ.QLnXIa_VyxsPp_BsHGq4jJBAAPOjZH9LfriuaywZo_M"
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 async function ensureTagsColumn() {
   // Add 'tags' column if missing
@@ -29,7 +30,7 @@ async function seedDocuments() {
       id: 101,
       name: 'Tax Report 2024',
       file_url: 'https://example.com/docs/tax2024.pdf',
-      category_id: 1,
+      category: 'Finance',
       tags: ['tax', 'report', 'finance'],
       version: 1,
       created_at: new Date().toISOString(),
@@ -39,7 +40,7 @@ async function seedDocuments() {
       id: 102,
       name: 'Medical Prescription',
       file_url: 'https://example.com/docs/prescription.jpg',
-      category_id: 2,
+      category: 'Health',
       tags: ['prescription', 'health'],
       version: 1,
       created_at: new Date().toISOString(),
@@ -49,7 +50,7 @@ async function seedDocuments() {
       id: 103,
       name: 'Degree Certificate',
       file_url: 'https://example.com/docs/degree.pdf',
-      category_id: 3,
+      category: 'Education',
       tags: ['degree', 'education'],
       version: 1,
       created_at: new Date().toISOString(),
@@ -60,7 +61,7 @@ async function seedDocuments() {
       id: 104,
       name: 'Passport Scan',
       file_url: 'https://example.com/docs/passport_scan.pdf',
-      category_id: 4,
+      category: 'Personal',
       tags: ['passport', 'personal', 'id'],
       version: 1,
       created_at: new Date().toISOString(),
@@ -70,7 +71,7 @@ async function seedDocuments() {
       id: 105,
       name: 'Personal Photo',
       file_url: 'https://example.com/docs/personal_photo.jpg',
-      category_id: 4,
+      category: 'Personal',
       tags: ['photo', 'personal'],
       version: 1,
       created_at: new Date().toISOString(),
@@ -80,7 +81,7 @@ async function seedDocuments() {
       id: 106,
       name: 'Resume',
       file_url: 'https://example.com/docs/resume.pdf',
-      category_id: 4,
+      category: 'Personal',
       tags: ['resume', 'personal', 'career'],
       version: 1,
       created_at: new Date().toISOString(),

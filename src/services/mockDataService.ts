@@ -32,7 +32,7 @@ export const createMockData = async () => {
         {
           id: '550e8400-e29b-41d4-a716-446655440003',
           user_id: user.id,
-          name: 'Personal Documents',
+          name: 'Personal',
           description: 'ID cards, passports, certificates',
           icon: 'User',
           color: '#8B5CF6',
@@ -84,7 +84,7 @@ export const createMockData = async () => {
           category: 'Financial',
           mime_type: 'application/pdf',
           size: 2048576,
-          tags: ['bank', 'statement', '2024', 'january'],
+          tags: ['bank', 'statement', 'january', '2024'],
           file_url: 'https://example.com/files/bank-statement-jan-2024.pdf',
           download_url: 'https://example.com/download/bank-statement-jan-2024.pdf',
           ai_summary: 'Bank statement showing transactions for January 2024 with ending balance of $5,240.',

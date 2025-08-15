@@ -42,7 +42,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 -- Create custom types
 CREATE TYPE document_category AS ENUM (
   'Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 
-  'Personal', 'Business', 'Tax', 'Education'
+  'Personal', 'Business', 'Tax', 'Education', 'Personal'
 );
 
 CREATE TYPE urgency_level AS ENUM ('low', 'medium', 'high', 'critical');

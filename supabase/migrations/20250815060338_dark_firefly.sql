@@ -38,7 +38,7 @@ CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- Create custom types
 CREATE TYPE subscription_tier AS ENUM ('free', 'premium', 'family_plus', 'business');
-CREATE TYPE document_category AS ENUM ('Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Business', 'Tax');
+CREATE TYPE document_category AS ENUM ('Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Business', 'Tax', 'Personal');
 CREATE TYPE urgency_level AS ENUM ('low', 'medium', 'high');
 CREATE TYPE family_role AS ENUM ('owner', 'admin', 'member', 'viewer', 'emergency');
 CREATE TYPE family_status AS ENUM ('active', 'pending', 'suspended');

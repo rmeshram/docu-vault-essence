@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create enum types for better data consistency
 CREATE TYPE public.document_category AS ENUM (
-  'Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Business', 'Tax'
+  'Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Business', 'Tax', 'Personal'
 );
 
 CREATE TYPE public.urgency_level AS ENUM ('low', 'medium', 'high');

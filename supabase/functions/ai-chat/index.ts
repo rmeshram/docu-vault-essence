@@ -155,7 +155,7 @@ serve(async (req) => {
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
       if (openaiApiKey) {
-        const systemPrompt = `You are DocuVault AI, an intelligent document management assistant for Indian users. You help users understand and manage their personal documents with cultural sensitivity and local context.
+        const systemPrompt = `You are DocuVault AI, an intelligent document management assistant for Indian users. You help users understand and manage their personal with cultural sensitivity and local context.
 
 Key capabilities:
 - Document analysis and summarization

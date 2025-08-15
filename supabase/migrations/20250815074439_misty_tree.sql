@@ -35,7 +35,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Create custom types
 CREATE TYPE subscription_tier AS ENUM ('free', 'premium', 'family_plus', 'business');
-CREATE TYPE document_category AS ENUM ('Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Business', 'Tax', 'Education');
+CREATE TYPE document_category AS ENUM ('Identity', 'Financial', 'Insurance', 'Medical', 'Legal', 'Personal', 'Personal', 'Business', 'Tax', 'Education');
 CREATE TYPE urgency_level AS ENUM ('low', 'medium', 'high', 'critical');
 CREATE TYPE family_role AS ENUM ('owner', 'admin', 'member', 'viewer', 'emergency');
 CREATE TYPE professional_type AS ENUM ('doctor', 'lawyer', 'ca', 'financial_advisor', 'insurance_agent');
