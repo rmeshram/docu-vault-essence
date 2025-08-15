@@ -4,7 +4,7 @@ Bell, FileText, TrendingUp, Clock, AlertCircle, Search, Filter,
 Upload, MessageCircle, Users, Shield, Star, ChevronRight,
 PieChart, Calendar, Award, Lock, Zap, BookOpen, User,
 BarChart3, Heart, Sparkles, Brain, Languages, Briefcase, Crown, Eye, Play,
-Headphones, Settings, Moon, Sun,
+Headphones, Settings, Moon, Sun, Globe,
 Mail, Share2, Download, Copy, Trash2,
 Plus, RotateCcw,
 Link, Tag, Folder, Archive, Database,
@@ -168,12 +168,14 @@ export default function Home() {
     name: user?.user_metadata?.name || user?.email?.split('@')[0] || "User",
     avatar: user?.user_metadata?.avatar_url || "/placeholder.svg",
     tier: "Premium",
-    storageUsed: 0,
+    storageUsed: 78, // 78% of 50GB
     totalDocs: 0,
-    aiQueriesLeft: 142,
-    familyMembers: 0,
-    monthlyUploads: 0,
-    aiInsightsFound: 0
+    aiQueriesLeft: 143,
+    familyMembers: 5,
+    monthlyUploads: 24,
+    aiInsightsFound: 0,
+    familyStorageUsed: 27.8, // 27.8GB of 50GB
+    cagr: 82.5
   });
   
   const [loading, setLoading] = useState(true);
@@ -545,304 +547,432 @@ export default function Home() {
 
   return (
     <div className="min-h-screen pb-20 bg-background">
-      {/* Header with enhanced features */}
-      <div className="bg-gradient-header text-white p-6">
-        <div className="max-w-7xl mx-auto">
-          {/* Top row with user info and actions */}
-          <div className="flex items-center justify-between mb-6">
+      {/* Modern Header matching DocuVault AI */}
+      <div className="bg-white border-b border-border shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo and branding */}
             <div className="flex items-center gap-4">
-              <div className="relative">
-                <Avatar className="w-16 h-16 border-3 border-white/40 shadow-large">
-                  <AvatarImage src={userStats.avatar} alt={userStats.name} />
-                  <AvatarFallback className="bg-white/20 text-white font-bold text-xl">
-                    {userStats.name.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-success rounded-full border-3 border-white flex items-center justify-center">
-                  <Crown className="w-4 h-4 text-white" />
-                </div>
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="text-white/90 text-sm font-medium">नमस्ते (Good morning),</p>
-                  <Badge className="bg-white/20 text-white border-white/30 text-xs font-bold">{userStats.tier}</Badge>
-                  <Badge className="bg-success/20 text-white border-success/30 text-xs">DigiLocker Synced</Badge>
-                </div>
-                <h1 className="text-white text-2xl font-bold mb-1">{userStats.name}</h1>
-                <div className="flex items-center gap-4 text-white/80 text-xs">
-                  <span className="flex items-center gap-1">
-                    <FileText className="w-3 h-3" />
-                    {userStats.totalDocs} docs
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Brain className="w-3 h-3" />
-                    {userStats.aiQueriesLeft} AI queries
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
-                    {userStats.familyMembers} family
-                  </span>
-                </div>
-              </div>
+              <h1 className="text-xl font-bold text-foreground">DocuVault AI</h1>
+              <Badge className="bg-primary/10 text-primary text-xs">Premium</Badge>
             </div>
-            <div className="flex items-center gap-3">
-              {/* Dark Mode Toggle */}
-              <div className="flex items-center gap-2 bg-white/20 rounded-xl p-2">
-                <Sun className="w-4 h-4 text-white" />
-                <Switch 
-                  checked={isDarkMode} 
-                  onCheckedChange={setIsDarkMode}
-                  className="data-[state=checked]:bg-white/30"
-                />
-                <Moon className="w-4 h-4 text-white" />
+
+            {/* Stats and actions */}
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Brain className="w-4 h-4" />
+                  {userStats.aiQueriesLeft} AI queries
+                </span>
+                <span className="flex items-center gap-1">
+                  <Users className="w-4 h-4" />
+                  {userStats.familyMembers} family
+                </span>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  <select 
+                    value={language} 
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="bg-transparent border-none text-sm focus:outline-none"
+                  >
+                    <option value="English">English</option>
+                    <option value="हिंदी">हिंदी</option>
+                  </select>
+                </div>
               </div>
-              
-              {/* Language Toggle with Indian Flag Colors */}
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30 backdrop-blur-sm gap-2"
-                onClick={() => setLanguage(language === "English" ? "हिंदी" : "English")}
-              >
-                <Languages className="w-4 h-4" />
-                {language}
-                <Badge className="bg-orange-500/20 text-white text-xs">15+</Badge>
-              </Button>
               
               <Button 
                 onClick={() => navigate('/upload')}
-                className="bg-white hover:bg-white/90 text-primary font-semibold shadow-medium transition-all duration-200 hover:scale-105"
-                size="sm"
+                className="bg-primary hover:bg-primary/90 text-white"
               >
                 <Upload className="w-4 h-4 mr-2" />
                 Upload
               </Button>
               
-              <button className="p-3 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all duration-200 shadow-soft hover:scale-105 relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full text-xs font-bold flex items-center justify-center">3</span>
-              </button>
-
-            </div>
-              <NotificationCenter />
-          </div>
-          
-          {/* Enhanced Search with Voice and AI Suggestions */}
-          <div className="relative mb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" />
-              <Input
-                placeholder={language === "हिंदी" ? "पूछें: 'मेरी इंश्योरेंस कब खत्म होगी?' या डॉक्यूमेंट खोजें..." : "Ask: 'When does my insurance expire?' or search documents..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-24 h-16 bg-white/20 border-white/30 text-white placeholder:text-white/70 rounded-2xl backdrop-blur-sm focus:bg-white/30 transition-all duration-200 text-base"
-                onKeyPress={(e) => e.key === 'Enter' && searchQuery && navigate('/chat')}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleVoiceSearch}
-                  className={`h-10 w-10 p-0 rounded-xl transition-all duration-200 ${
-                    isVoiceActive 
-                      ? "bg-destructive text-white shadow-glow animate-pulse" 
-                      : "text-white/70 hover:text-white hover:bg-white/20"
-                  }`}
-                >
-                  <Headphones className="w-5 h-5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-10 w-10 p-0 text-white/70 hover:text-white hover:bg-white/20 rounded-xl"
-                >
-                  <Filter className="w-5 h-5" />
-                </Button>
-              </div>
-            </div>
-            
-            {/* AI-Powered Search Suggestions */}
-            <div className="flex gap-2 mt-3 flex-wrap">
-              {[
-                language === "हिंदी" ? "टैक्स डॉक्यूमेंट्स" : "Tax documents", 
-                language === "हिंदी" ? "मेडिकल रिपोर्ट्स" : "Medical reports", 
-                language === "हिंदी" ? "इंश्योरेंस पॉलिसी" : "Insurance policies",
-                "Aadhaar Card",
-                "PAN Card"
-              ].map((suggestion) => (
-                <Badge 
-                  key={suggestion}
-                  className="bg-white/20 text-white/90 border-white/30 hover:bg-white/30 cursor-pointer transition-all hover:scale-105"
-                  onClick={() => setSearchQuery(suggestion)}
-                >
-                  {suggestion}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Enhanced Storage Usage with Family Stats */}
-          <Card className="bg-white/10 border-white/20 backdrop-blur-sm mb-6">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-white/90 text-sm font-medium">Personal Storage</span>
-                    <span className="text-white text-sm font-bold">{userStats.storageUsed}% of 50GB</span>
-                  </div>
-                  <Progress value={userStats.storageUsed} className="h-2 mb-2" />
-                  <div className="flex justify-between text-white/70 text-xs">
-                    <span>Free: 5GB → Premium: 50GB</span>
-                    <Button variant="link" className="text-white/90 text-xs p-0 h-auto hover:text-white">
-                      Upgrade to 200GB →
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-white/90 text-sm font-medium mb-1">Family Vault</p>
-                  <p className="text-white text-2xl font-bold">27.8GB</p>
-                  <p className="text-white/70 text-xs">Used by {userStats.familyMembers} members</p>
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-white/90 text-sm font-medium mb-1">This Month</p>
-                  <p className="text-white text-2xl font-bold">+{userStats.monthlyUploads}</p>
-                  <p className="text-white/70 text-xs">Documents added</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Join DigiLocker Users Banner */}
-          <div className="bg-white/10 rounded-2xl p-4 backdrop-blur-sm border border-white/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Database className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-white font-bold text-lg">Join 434M+ DigiLocker users with AI</p>
-                  <p className="text-white/80 text-sm">Growing at 825% CAGR • Trusted by millions</p>
-                </div>
-              </div>
-              <Badge className="bg-success/20 text-white border-success/30 px-3 py-1">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                825% CAGR
-              </Badge>
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={userStats.avatar} />
+                <AvatarFallback>{userStats.name[0]}</AvatarFallback>
+              </Avatar>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Hero Section with Tagline and Demo */}
-        <section className="mb-8">
-          <Card className="bg-gradient-primary border-0 shadow-elegant text-white overflow-hidden relative">
-            <div className="absolute inset-0 opacity-30">
-              <div className="w-full h-full bg-white/5 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent)]" />
-            </div>
-            <CardContent className="p-8 relative z-10">
-              <div className="grid md:grid-cols-2 gap-8 items-center">
+      {/* Search Bar */}
+      <div className="bg-white border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              placeholder="Ask 'When does my insurance expire?' or search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 pr-12 h-12 bg-muted/50 border-input rounded-lg text-base"
+              onKeyPress={(e) => e.key === 'Enter' && searchQuery && navigate('/search')}
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleVoiceSearch}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0"
+            >
+              <Headphones className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Document category tabs */}
+          <div className="flex gap-4 mt-4">
+            {['Tax Documents', 'Medical reports', 'Insurance policies', 'Aadhaar Card', 'PAN Card'].map((category) => (
+              <Badge 
+                key={category}
+                variant="secondary"
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => navigate('/categories')}
+              >
+                {category}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+        {/* Storage Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-4xl font-bold mb-4 leading-tight">
-                    Your Documents, <br />
-                    <span className="text-yellow-200 bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
-                      Understood Instantly
-                    </span> <br />
-                    <span className="text-2xl">in any language</span>
-                  </h2>
-                  <p className="text-white/90 mb-6 text-lg leading-relaxed">
-                    Transform your document storage into AI intelligence. Chat, analyze, and get insights in 15+ Indian languages including Hindi, Tamil, Telugu, and more.
-                  </p>
-                  <div className="flex gap-3 mb-4">
-                    <Button className="bg-white text-primary hover:bg-white/90 font-semibold shadow-medium">
-                      <Brain className="w-4 h-4 mr-2" />
-                      Try AI Chat
-                    </Button>
-                    <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                      <Languages className="w-4 h-4 mr-2" />
-                      15+ Languages
-                    </Button>
-                    <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                      <Play className="w-4 h-4 mr-2" />
-                      Watch Demo
-                    </Button>
+                  <p className="text-sm font-medium text-muted-foreground">Personal Storage</p>
+                  <p className="text-2xl font-bold">{userStats.storageUsed}% of 50GB</p>
+                </div>
+                <Button variant="link" className="text-primary text-sm p-0">
+                  Upgrade to 200GB →
+                </Button>
+              </div>
+              <Progress value={userStats.storageUsed} className="h-2" />
+              <p className="text-xs text-muted-foreground mt-2">Free: 5GB → Premium: 50GB</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">Family Vault</p>
+                <p className="text-2xl font-bold">{userStats.familyStorageUsed}GB of 50GB</p>
+                <p className="text-xs text-muted-foreground">Used by {userStats.familyMembers} members</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold">+{userStats.monthlyUploads}</p>
+                <p className="text-xs text-muted-foreground">Documents added</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* DigiLocker Integration Banner */}
+        <Card className="bg-muted/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Database className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">Join 434M+ DigiLocker users with AI</p>
+                  <p className="text-muted-foreground text-sm">Growing at {userStats.cagr}% CAGR • Trusted by millions</p>
+                </div>
+              </div>
+              <Badge className="bg-success/10 text-success">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                {userStats.cagr}% CAGR
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Purple Hero Section */}
+        <Card className="bg-gradient-to-br from-primary to-purple-600 text-white border-0 shadow-lg">
+          <CardContent className="p-8">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">
+                  Your Documents, Understood Instantly
+                </h2>
+                <p className="text-white/90 mb-6 text-lg">
+                  Transform your document storage into AI intelligence. Chat, analyze, and get insights in 15+ Indian languages including Hindi, Tamil, Telugu, and more.
+                </p>
+                <div className="flex gap-3 mb-4">
+                  <Button 
+                    onClick={() => navigate('/chat')}
+                    className="bg-white text-primary hover:bg-white/90 font-semibold"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Try AI Chat
+                  </Button>
+                  <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                    Bank-level security
+                  </Button>
+                </div>
+              </div>
+              
+              {/* AI Chat Demo */}
+              <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5" />
                   </div>
-                  <div className="flex items-center gap-4 text-white/80 text-sm">
-                    <span className="flex items-center gap-1">
-                      <CheckCircle className="w-4 h-4 text-success" />
-                      90% upload success
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Shield className="w-4 h-4 text-success" />
-                      Bank-level security
-                    </span>
+                  <div>
+                    <span className="text-sm font-medium">AI Assistant</span>
+                    <Badge className="ml-2 bg-success/20 text-white text-xs">Live</Badge>
                   </div>
                 </div>
-                <div className="bg-white/10 rounded-2xl p-6 backdrop-blur-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                      <MessageCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium">AI Assistant</span>
-                      <Badge className="ml-2 bg-success/20 text-white text-xs">Live</Badge>
-                    </div>
+                <div className="space-y-3">
+                  <div className="bg-white/10 rounded-lg p-3">
+                    <p className="text-sm text-white/80">मेरी हेल्थ इंश्योरेंस कब खत्म होगी?</p>
                   </div>
-                  <div className="space-y-3">
-                    <div className="bg-white/10 rounded-xl p-4">
-                      <p className="text-sm font-medium mb-1">You:</p>
-                      <p className="text-sm">"मेरी हेल्थ इंश्योरेंस कब खत्म होगी?"</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 text-primary">
-                      <p className="text-sm font-medium mb-2">🏥 AI Response:</p>
-                      <p className="text-sm font-bold">Health Insurance expires on May 15, 2024</p>
-                      <p className="text-xs mt-2 text-primary/70">Premium: ₹12,500 | Early renewal saves ₹2,500</p>
-                      <div className="flex gap-2 mt-3">
-                        <Badge className="bg-primary/20 text-primary text-xs">Auto-translated</Badge>
-                        <Badge className="bg-success/20 text-success text-xs">Savings found</Badge>
-                      </div>
+                  <div className="bg-white rounded-lg p-3 text-primary">
+                    <p className="text-sm font-bold mb-1">AI Response:</p>
+                    <p className="text-sm font-semibold">Health Insurance expires on May 15, 2024</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className="bg-primary/20 text-primary text-xs">Auto-translated</Badge>
+                      <Badge className="bg-success/20 text-success text-xs">Savings found</Badge>
                     </div>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Enhanced Quick Actions with Badges */}
-        <section className="mb-8">
+        {/* Your Dashboard */}
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Your Dashboard</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Document Categories */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-primary" />
+                  Document Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 flex items-center justify-center">
+                  <Pie data={categoryChartData} options={categoryChartOptions} />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Predictions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-primary" />
+                  AI Predictions
+                  <Badge className="bg-success/10 text-success text-xs">Live</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="p-3 bg-success/10 rounded-lg">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Tax Savings Found</span>
+                      <Badge className="bg-success/20 text-success text-xs">New</Badge>
+                    </div>
+                    <p className="text-xl font-bold text-success">₹67,000</p>
+                    <p className="text-xs text-muted-foreground">5 deductions verified by AI</p>
+                  </div>
+                  
+                  <div className="p-3 bg-destructive/10 rounded-lg">
+                    <span className="text-sm font-medium">Risk Assessment</span>
+                    <p className="text-xl font-bold text-destructive">2 High</p>
+                    <p className="text-xs text-muted-foreground">Report coming soon</p>
+                  </div>
+                  
+                  <div className="p-3 bg-primary/10 rounded-lg">
+                    <span className="text-sm font-medium">Family Health Score</span>
+                    <p className="text-xl font-bold text-primary">85%</p>
+                    <p className="text-xs text-muted-foreground">All members covered</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Family Vault */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  Family Vault
+                  <Badge className="text-xs">{userStats.familyMembers} members</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>Shared Storage</span>
+                    <span className="font-medium">55GB / 80GB</span>
+                  </div>
+                  <Progress value={68} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">97.8GB used by family</p>
+                </div>
+                
+                <div className="space-y-2">
+                  {[
+                    { name: "Mom", role: "Admin", docs: 34 },
+                    { name: "Dad", role: "Member", docs: 28 },
+                    { name: "Sister", role: "Member", docs: 15 }
+                  ].map((member, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className="text-xs">{member.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{member.name}</p>
+                          <p className="text-xs text-muted-foreground">{member.role}</p>
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium">{member.docs} <TrendingUp className="inline w-3 h-3" /></span>
+                    </div>
+                  ))}
+                </div>
+                
+                <Button variant="outline" className="w-full mt-4 text-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Invite Member
+                  <Badge className="ml-2 bg-destructive/10 text-destructive text-xs">Emergency Access</Badge>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Recent Documents */}
+        <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-foreground">Quick Actions</h2>
-            <Button variant="ghost" className="text-primary">
-              <Settings className="w-4 h-4 mr-2" />
-              Customize
+            <h2 className="text-2xl font-bold">Recent Documents</h2>
+            <Button 
+              variant="ghost" 
+              className="text-primary"
+              onClick={() => navigate('/timeline')}
+            >
+              Timeline View →
             </Button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quickActions.map((action, index) => (
-              <Card 
-                key={index}
-                className="bg-gradient-card border-0 shadow-soft hover:shadow-medium transition-all duration-200 cursor-pointer group hover:scale-105"
-                onClick={() => handleQuickAction(action.onClick)}
-              >
-                <CardContent className="p-6 text-center relative">
-                  <Badge className="absolute top-2 right-2 text-xs bg-primary/20 text-primary">
-                    {action.badge}
-                  </Badge>
-                  <div className={`w-14 h-14 ${action.color} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform shadow-medium`}>
-                    <action.icon className="w-7 h-7 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-base text-foreground mb-1">{action.title}</h3>
-                  <p className="text-xs text-muted-foreground">{action.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {recentDocs.length > 0 ? (
+              recentDocs.slice(0, 4).map((doc) => (
+                <Card key={doc.id} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {doc.category || 'Document'}
+                      </Badge>
+                    </div>
+                    
+                    <h3 className="font-semibold text-sm mb-2 line-clamp-2">{doc.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                      {doc.ai_summary || 'Processing...'}
+                    </p>
+                    
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{formatTimeAgo(doc.created_at)}</span>
+                      <span>{formatFileSize(doc.size)}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="secondary" className="text-xs">
+                        {doc.file_type?.toUpperCase() || 'PDF'}
+                      </Badge>
+                      <div className="flex gap-1">
+                        {doc.is_verified && (
+                          <Badge className="bg-success/10 text-success text-xs">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Verified
+                          </Badge>
+                        )}
+                        {doc.category === 'Identity' && (
+                          <Badge className="bg-primary/10 text-primary text-xs">
+                            <Link className="w-3 h-3 mr-1" />
+                            Linked to Self
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              // Mock data display
+              [
+                { name: "Aadhaar", type: "Identity", time: "-2 d", size: "0.5 MB", category: "Identity", verified: false },
+                { name: "PAN Card", type: "Identity", time: "1 day ago", size: "0.3 MB", category: "Identity", verified: false },
+                { name: "Tax Return", type: "Financial", time: "1 week ago", size: "1.2 MB", category: "Financial", verified: true },
+                { name: "Health Insurance", type: "Insurance", time: "2 weeks ago", size: "1.8 MB", category: "Insurance", verified: false }
+              ].map((doc, index) => (
+                <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {doc.category}
+                      </Badge>
+                    </div>
+                    
+                    <h3 className="font-semibold text-sm mb-2">{doc.name}</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {doc.name === "Aadhaar" && "Aadhaar Card - Identity document with biometric data"}
+                      {doc.name === "PAN Card" && "PAN Card - Account Number for tax purposes"}
+                      {doc.name === "Tax Return" && "Annual filing - ₹4,000 deductions - Linked to Self"}
+                      {doc.name === "Health Insurance" && "HSL coverage - expires May 15, 2024"}
+                    </p>
+                    
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{doc.time}</span>
+                      <span>{doc.size}</span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-3">
+                      <Badge variant="secondary" className="text-xs">PDF</Badge>
+                      <div className="flex gap-1">
+                        {doc.verified && (
+                          <Badge className="bg-success/10 text-success text-xs">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Verified
+                          </Badge>
+                        )}
+                        {doc.category === 'Identity' && (
+                          <Badge className="bg-primary/10 text-primary text-xs">
+                            <Link className="w-3 h-3 mr-1" />
+                            Linked to Self
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
-        </section>
+        </div>
 
         {/* Enhanced Dashboard with Charts */}
         <section className="mb-8">
