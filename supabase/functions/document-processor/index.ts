@@ -27,6 +27,10 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Initialize variables for error handling scope
+  let supabaseClient: any
+  let documentId: string | undefined
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -49,7 +53,7 @@ serve(async (req) => {
     // Get document data to validate user
     const { data: documentData, error: docError } = await supabaseClient
       .from('documents')
-      .select('*, profiles!inner(user_id)')
+      .select('*')
       .eq('id', documentId)
       .single()
 
@@ -73,8 +77,7 @@ serve(async (req) => {
       .from('documents')
       .update({ 
         status: 'processing',
-        processing_stage: 'ocr',
-        processing_started_at: new Date().toISOString()
+        updated_at: new Date().toISOString()
       })
       .eq('id', documentId)
 
@@ -145,10 +148,10 @@ serve(async (req) => {
     await supabaseClient
       .from('documents')
       .update({ 
-        processing_stage: 'ai_analysis',
         extracted_text: extractedText,
-        extracted_text_confidence: ocrConfidence,
-        language_detected: detectedLanguage
+        ocr_confidence: ocrConfidence,
+        language_detected: detectedLanguage,
+        updated_at: new Date().toISOString()
       })
       .eq('id', documentId)
 
@@ -209,7 +212,7 @@ Focus on Indian document types, financial regulations, and cultural context.`
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              model: 'gpt-4',
+              model: 'gpt-3.5-turbo',
               messages: [{ role: 'user', content: analysisPrompt }],
               max_tokens: 1000,
               temperature: 0.1
@@ -293,7 +296,7 @@ Focus on Indian document types, financial regulations, and cultural context.`
                 .from('document_embeddings')
                 .insert({
                   document_id: documentId,
-                  embedding: embedding,
+                  embedding_json: embedding,
                   content_hash: await hashContent(extractedText),
                   model_version: 'text-embedding-ada-002'
                 })
@@ -313,21 +316,13 @@ Focus on Indian document types, financial regulations, and cultural context.`
       .from('documents')
       .update({
         status: 'completed',
-        processing_stage: 'completed',
-        processing_completed_at: new Date().toISOString(),
         ai_summary: aiSummary,
         ai_confidence: aiConfidence,
         category: suggestedCategory,
         ai_tags: aiTags,
-        metadata: {
-          ...(documentData.metadata || {}),
-          key_info: keyInfo,
-          risk_assessment: riskAssessment,
-          ocr_confidence: ocrConfidence,
-          ai_confidence: aiConfidence,
-          embedding_created: embeddingCreated,
-          processing_completed_at: new Date().toISOString()
-        }
+        ocr_confidence: ocrConfidence,
+        language_detected: detectedLanguage,
+        updated_at: new Date().toISOString()
       })
       .eq('id', documentId)
 
@@ -392,9 +387,8 @@ Focus on Indian document types, financial regulations, and cultural context.`
         await supabaseClient
           .from('documents')
           .update({
-            status: 'failed',
-            processing_error: error.message,
-            processing_completed_at: new Date().toISOString()
+            status: 'error',
+            updated_at: new Date().toISOString()
           })
           .eq('id', documentId)
       }
@@ -553,15 +547,12 @@ async function createExpiryReminder(supabaseClient: any, userId: string, documen
       .from('reminders')
       .insert({
         user_id: userId,
-        document_id: documentId,
+        related_document_id: documentId,
         title: `Document Expiry Reminder`,
         description: `Important document expires on ${expiryDate.toLocaleDateString()}`,
-        reminder_type: 'renewal',
         reminder_date: reminderDate.toISOString(),
         urgency: 'high',
-        is_auto_generated: true,
-        ai_suggested: true,
-        ai_confidence: 90
+        is_auto_generated: true
       })
 
     console.log('Expiry reminder created successfully')
@@ -621,7 +612,7 @@ async function generateUserInsights(supabaseClient: any, userId: string, documen
     // Get user's document statistics
     const { data: userDocs } = await supabaseClient
       .from('documents')
-      .select('category, created_at, metadata')
+      .select('category, created_at')
       .eq('user_id', userId)
       .eq('status', 'completed')
 
@@ -645,12 +636,7 @@ async function generateUserInsights(supabaseClient: any, userId: string, documen
         insight_type: 'compliance',
         title: 'Missing Important Document Categories',
         description: `Consider uploading ${missingCategories.join(', ')} documents for complete protection.`,
-        priority: 'medium',
-        recommended_actions: {
-          actions: ['Upload missing documents', 'Set up document reminders'],
-          categories: missingCategories
-        },
-        related_categories: missingCategories
+        priority: 'medium'
       })
     }
 
@@ -662,11 +648,7 @@ async function generateUserInsights(supabaseClient: any, userId: string, documen
         title: 'Insurance Portfolio Review',
         description: 'AI suggests reviewing your insurance coverage for potential gaps and savings opportunities.',
         priority: 'medium',
-        potential_savings: 15000,
-        recommended_actions: {
-          actions: ['Review coverage gaps', 'Compare premium rates', 'Check for discounts'],
-          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        },
+        savings_potential: '15000',
         related_document_ids: [documentId]
       })
     }
