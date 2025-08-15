@@ -32,13 +32,13 @@ serve(async (req) => {
   let documentId: string | undefined
 
   try {
-    const supabaseClient = createClient(
+    supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const { 
-      documentId, 
+      documentId: reqDocumentId, 
       fileUrl, 
       fileName, 
       fileType, 
@@ -47,6 +47,8 @@ serve(async (req) => {
       language = 'auto',
       processingOptions = {}
     }: ProcessingRequest = await req.json()
+
+    documentId = reqDocumentId
 
     console.log(`Processing document: ${fileName} (${documentId})`)
 

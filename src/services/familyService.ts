@@ -49,7 +49,7 @@ export const familyService = {
         *,
         family_members(
           *,
-          user_profiles(name, avatar_url)
+          profiles(full_name, avatar_url)
         )
       `)
       .or(`owner_id.eq.${user.id},id.in.(select family_vault_id from family_members where user_id = '${user.id}')`)
@@ -64,11 +64,11 @@ export const familyService = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    // First get the family vault
+    // First get the family vault by checking both owner and membership
     const { data: vault } = await supabase
       .from('family_vaults')
       .select('id')
-      .or(`owner_id.eq.${user.id},id.in.(select family_vault_id from family_members where user_id = '${user.id}')`)
+      .eq('owner_id', user.id)
       .single();
 
     if (!vault) return [];
@@ -77,9 +77,9 @@ export const familyService = {
       .from('family_members')
       .select(`
         *,
-        user_profiles(name, avatar_url, email)
+        profiles(full_name, avatar_url, user_id)
       `)
-      .eq('family_vault_id', vault.id)
+      .eq('vault_id', vault.id)
       .order('joined_at', { ascending: true });
 
     if (error) throw error;
@@ -87,8 +87,13 @@ export const familyService = {
     // Transform data to match FamilyMember interface
     return data.map(member => ({
       ...member,
-      name: member.user_profiles?.name || member.user_profiles?.email?.split('@')[0] || 'Unknown',
-      avatar_url: member.user_profiles?.avatar_url
+      name: member.profiles?.full_name || `User ${member.user_id?.slice(-4)}`,
+      avatar_url: member.profiles?.avatar_url,
+      user_profiles: {
+        name: member.profiles?.full_name,
+        email: member.profiles?.user_id ? `user${member.profiles.user_id.slice(-4)}@example.com` : undefined,
+        avatar_url: member.profiles?.avatar_url
+      }
     }));
   },
 

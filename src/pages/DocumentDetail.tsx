@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
-  ArrowLeft, Download, Share, Edit, Trash2, FileText, Image, 
+  ArrowLeft, Download, Share, Share2, Edit, Trash2, FileText, Image, 
   File, Star, Users, Lock, Globe, Calendar, Tag, Eye, MoreHorizontal
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -240,15 +240,15 @@ export default function DocumentDetail() {
                 <h3 className="text-lg font-semibold">Quick Actions</h3>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={() => navigate(`/document/${document.id}/download`)}>
                   <Download className="w-4 h-4 mr-2" />
                   Download
                 </Button>
-                <Button className="w-full" variant="outline">
-                  <Share className="w-4 h-4 mr-2" />
+                <Button className="w-full" variant="outline" onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                  <Share2 className="w-4 h-4 mr-2" />
                   Share
                 </Button>
-                <Button className="w-full" variant="outline">
+                <Button className="w-full" variant="outline" onClick={() => alert('Edit tags feature coming soon')}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Tags
                 </Button>
