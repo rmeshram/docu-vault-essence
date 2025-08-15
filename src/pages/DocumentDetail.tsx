@@ -31,17 +31,17 @@ interface Document {
 }
 
 export default function DocumentDetail() {
-  const { documentId } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (documentId) {
+    if (id) {
       fetchDocument();
     }
-  }, [documentId]);
+  }, [id]);
 
   const fetchDocument = async () => {
     try {
@@ -56,7 +56,7 @@ export default function DocumentDetail() {
             is_ai_generated
           )
         `)
-        .eq('id', documentId)
+        .eq('id', id)
         .single();
 
       if (error) {
