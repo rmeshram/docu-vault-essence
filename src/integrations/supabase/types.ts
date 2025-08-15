@@ -204,6 +204,66 @@ export type Database = {
           },
         ]
       }
+      document_embeddings: {
+        Row: {
+          content_hash: string
+          created_at: string | null
+          document_id: string
+          embedding_json: Json | null
+          id: string
+          model_version: string | null
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string | null
+          document_id: string
+          embedding_json?: Json | null
+          id?: string
+          model_version?: string | null
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string | null
+          document_id?: string
+          embedding_json?: Json | null
+          id?: string
+          model_version?: string | null
+        }
+        Relationships: []
+      }
+      document_relationships: {
+        Row: {
+          ai_detected: boolean | null
+          confidence_score: number | null
+          created_at: string | null
+          document_id_1: string
+          document_id_2: string
+          id: string
+          metadata: Json | null
+          relationship_type: string
+        }
+        Insert: {
+          ai_detected?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_id_1: string
+          document_id_2: string
+          id?: string
+          metadata?: Json | null
+          relationship_type: string
+        }
+        Update: {
+          ai_detected?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          document_id_1?: string
+          document_id_2?: string
+          id?: string
+          metadata?: Json | null
+          relationship_type?: string
+        }
+        Relationships: []
+      }
       document_shares: {
         Row: {
           access_count: number | null
@@ -541,6 +601,42 @@ export type Database = {
           storage_limit?: number | null
           storage_used?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          refresh_token: string | null
+          service: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          refresh_token?: string | null
+          service: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          refresh_token?: string | null
+          service?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
