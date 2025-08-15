@@ -1040,7 +1040,7 @@ export default function Home() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Badge variant="secondary" className="text-xs">
-                          {doc.file_type.toUpperCase()}
+                          {doc.file_type?.toUpperCase()}
                         </Badge>
                         {doc.language_detected && (
                           <Badge variant="outline" className="text-[10px]">
