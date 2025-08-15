@@ -89,6 +89,12 @@ VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+> Before running the app, create a `.env.local` file with the following variables:
+>
+> - VITE_SUPABASE_URL
+> - VITE_SUPABASE_ANON_KEY
+> - VITE_OPENAI_KEY (optional for AI features)
+
 ### 4. Database Migration
 ```bash
 # Apply database schema

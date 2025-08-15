@@ -19,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useUploadStore } from "@/store/uploadStore";
+import { useDocumentUpload } from '@/hooks/useDocumentUpload'
 
 type FileStatus = 'queued' | 'uploading' | 'uploaded' | 'analyzing' | 'analyzed' | 'failed' | 'analysis-failed' | 'duplicate-detected' | 'version-created';
 
@@ -97,7 +98,7 @@ const uploadMethods = [
   }
 ];
 
-const aiFeatures = [
+const initialAIFeatures = [
   {
     title: 'Smart OCR',
     description: 'Extract text with 99.5% accuracy',
@@ -148,10 +149,21 @@ export default function Upload() {
   const [enableVersionControl, setEnableVersionControl] = useState(false);
   const [bulkTags, setBulkTags] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // AI features state (editable via Advanced Settings)
+  const [aiFeatures, setAIFeatures] = useState(initialAIFeatures);
+
+  const toggleFeature = (index: number, value?: boolean) => {
+    setAIFeatures(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], active: typeof value === 'boolean' ? value : !next[index].active };
+      return next;
+    });
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const addDocument = useUploadStore((state) => state.addDocument);
+  const { uploadDocument, uploading: hookUploading } = useDocumentUpload();
 
   const getStatusIcon = (status: FileStatus) => {
     switch (status) {
@@ -219,9 +231,37 @@ export default function Upload() {
     setFiles(prev => [...prev, ...newFiles]);
     setIsProcessing(true);
 
-    // Process each file
-    newFiles.forEach((file) => {
-      simulateUpload(file.id);
+    // Process each file by calling upload hook
+    newFiles.forEach((f) => {
+      // Optimistic update
+      setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'uploading', progress: 5 } : file));
+
+      if (f.file) {
+        uploadDocument(f.file, {
+          category: selectedCategory || undefined,
+          tags: f.tags,
+          enableAI: enableAI,
+          enableOCR: true
+        }).then((result) => {
+          // If upload succeeded, mark uploaded and start analysis simulation
+          setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'uploaded', progress: 100 } : file));
+
+          // Optionally simulate AI analysis locally until function does it
+          if (enableAI) {
+            setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'analyzing', progress: 0 } : file));
+
+            setTimeout(() => {
+              setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'analyzed', progress: 100, aiSummary: `AI processed: ${file.name}` } : file));
+            }, 2500);
+          }
+        }).catch((err) => {
+          console.error('uploadDocument failed', err);
+          setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'failed' } : file));
+        });
+      } else {
+        // fallback to simulation
+        simulateUpload(f.id);
+      }
     });
 
     toast({
@@ -426,9 +466,7 @@ export default function Upload() {
   };
 
   const mergeDuplicate = (fileId: string) => {
-    setFiles(prev => prev.map(file => 
-      file.id === fileId ? { ...file, status: 'analyzed' as FileStatus, duplicateOf: undefined } : file
-    ));
+    setFiles(prev => prev.map(file => file.id === fileId ? { ...file, status: 'analyzed' as FileStatus, duplicateOf: undefined } : file));
     toast({
       title: "Files merged",
       description: "Duplicate document has been merged with existing file",
@@ -436,14 +474,12 @@ export default function Upload() {
   };
 
   const createVersion = (fileId: string) => {
-    setFiles(prev => prev.map(file => 
-      file.id === fileId ? { 
-        ...file, 
-        status: 'version-created' as FileStatus, 
-        version: 2,
-        duplicateOf: undefined 
-      } : file
-    ));
+    setFiles(prev => prev.map(file => file.id === fileId ? { 
+      ...file, 
+      status: 'version-created' as FileStatus, 
+      version: 2,
+      duplicateOf: undefined 
+    } : file));
     toast({
       title: "New version created",
       description: "Document saved as version 2",
@@ -556,7 +592,7 @@ export default function Upload() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {aiFeatures.map((feature, index) => (
+                {initialAIFeatures.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 bg-background rounded-xl border border-border/50">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                       feature.active ? 'bg-primary/10' : 'bg-muted'
@@ -570,6 +606,7 @@ export default function Upload() {
                           checked={feature.active} 
                           disabled={!feature.active && index > 3}
                           className="scale-75"
+                          onCheckedChange={(value) => toggleFeature(index, value)}
                         />
                       </div>
                       <p className="text-xs text-muted-foreground">{feature.description}</p>

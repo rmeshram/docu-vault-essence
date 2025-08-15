@@ -1,0 +1,60 @@
+name: Supabase Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      DEPLOY_STATIC: ${{ secrets.DEPLOY_STATIC || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install supabase CLI
+        run: npm i -g supabase
+
+      - name: Authenticate supabase CLI
+        run: |
+          supabase login --access-token "$SUPABASE_ACCESS_TOKEN"
+
+      - name: Link supabase project
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Apply database migrations
+        run: |
+          supabase db push --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --no-verify
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Deploy static site to Supabase Storage (optional)
+        if: env.DEPLOY_STATIC == 'true'
+        run: |
+          # Ensure a public bucket exists and upload build artifacts
+          # You may need to create the bucket beforehand: supabase storage create <bucket>
+          BUCKET=site
+          supabase storage create "$BUCKET" --project-ref "$SUPABASE_PROJECT_REF" || true
+          supabase storage remove "$BUCKET" --project-ref "$SUPABASE_PROJECT_REF" --recursive --yes || true
+          supabase storage upload "$BUCKET" ./dist --project-ref "$SUPABASE_PROJECT_REF" --no-verify || true
+
+      - name: Done
+        run: echo "Supabase deploy workflow finished"

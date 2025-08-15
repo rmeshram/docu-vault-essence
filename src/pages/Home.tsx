@@ -25,6 +25,7 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
+import { documentService } from '@/services/documentService';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title);
@@ -172,6 +173,34 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
 
+  // Backend-driven state
+  const [recentDocs, setRecentDocs] = useState<any[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<{ category: string; count: number }[]>([]);
+  const [totalDocs, setTotalDocs] = useState<number>(user.totalDocs);
+
+  // Fetch recent documents and category counts from backend
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const docs = await documentService.getRecentDocuments(8);
+        if (!mounted) return;
+        setRecentDocs(docs || []);
+        setTotalDocs((docs && docs.length) ? docs.length : user.totalDocs);
+
+        const cats = await documentService.getCategoriesWithCounts();
+        if (!mounted) return;
+        // Expecting [{ category, count }]
+        setCategoryCounts(cats || []);
+      } catch (err) {
+        console.error('Failed to load home data', err);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, []);
+
   // Rotate insights every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -181,10 +210,16 @@ export default function Home() {
   }, []);
 
   // Chart data for document categories
+  const categoryLabels = ['Financial', 'Identity', 'Insurance', 'Medical', 'Legal', 'Personal'];
+  const categoryDataValues = categoryLabels.map((label) => {
+    const found = categoryCounts.find(c => c.category === label);
+    return found ? Number(found.count) : 0;
+  });
+
   const categoryChartData = {
-    labels: ['Financial', 'Identity', 'Insurance', 'Medical', 'Legal', 'Personal'],
+    labels: categoryLabels,
     datasets: [{
-      data: [45, 32, 28, 24, 18, 39],
+      data: categoryDataValues,
       backgroundColor: [
         '#10B981', // Financial - Green
         '#3B82F6', // Identity - Blue  
