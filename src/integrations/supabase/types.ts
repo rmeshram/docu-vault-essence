@@ -339,8 +339,6 @@ export type Database = {
           invited_by: string | null
           joined_at: string | null
           permissions: Json | null
-          role: Database["public"]["Enums"]["family_role"] | null
-          status: Database["public"]["Enums"]["family_status"] | null
           updated_at: string | null
           user_id: string | null
           vault_id: string
@@ -352,8 +350,6 @@ export type Database = {
           invited_by?: string | null
           joined_at?: string | null
           permissions?: Json | null
-          role?: Database["public"]["Enums"]["family_role"] | null
-          status?: Database["public"]["Enums"]["family_status"] | null
           updated_at?: string | null
           user_id?: string | null
           vault_id: string
@@ -365,8 +361,6 @@ export type Database = {
           invited_by?: string | null
           joined_at?: string | null
           permissions?: Json | null
-          role?: Database["public"]["Enums"]["family_role"] | null
-          status?: Database["public"]["Enums"]["family_status"] | null
           updated_at?: string | null
           user_id?: string | null
           vault_id?: string
@@ -664,9 +658,26 @@ export type Database = {
         | "Personal"
         | "Business"
         | "Tax"
-      family_role: "owner" | "admin" | "member" | "viewer" | "emergency"
-      family_status: "active" | "pending" | "suspended"
+      document_status: "uploading" | "processing" | "completed" | "error"
+      family_role: "owner" | "admin" | "member" | "viewer"
+      family_status: "pending" | "accepted" | "rejected" | "suspended"
+      notification_type:
+        | "reminder"
+        | "expiry"
+        | "sharing"
+        | "payment"
+        | "system"
+      payment_status: "pending" | "completed" | "failed" | "refunded"
+      professional_type:
+        | "ca"
+        | "lawyer"
+        | "financial_advisor"
+        | "insurance_agent"
+        | "tax_consultant"
+      relationship_type: "similar" | "related" | "duplicate" | "version"
+      subscription_tier: "free" | "premium" | "family_plus" | "business"
       urgency_level: "low" | "medium" | "high"
+      user_role: "user" | "family_admin" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -804,9 +815,22 @@ export const Constants = {
         "Business",
         "Tax",
       ],
-      family_role: ["owner", "admin", "member", "viewer", "emergency"],
-      family_status: ["active", "pending", "suspended"],
+      document_status: ["uploading", "processing", "completed", "error"],
+      family_role: ["owner", "admin", "member", "viewer"],
+      family_status: ["pending", "accepted", "rejected", "suspended"],
+      notification_type: ["reminder", "expiry", "sharing", "payment", "system"],
+      payment_status: ["pending", "completed", "failed", "refunded"],
+      professional_type: [
+        "ca",
+        "lawyer",
+        "financial_advisor",
+        "insurance_agent",
+        "tax_consultant",
+      ],
+      relationship_type: ["similar", "related", "duplicate", "version"],
+      subscription_tier: ["free", "premium", "family_plus", "business"],
       urgency_level: ["low", "medium", "high"],
+      user_role: ["user", "family_admin", "admin"],
     },
   },
 } as const
