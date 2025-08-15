@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Document {
   id: string;
@@ -37,52 +38,6 @@ interface Document {
   };
 }
 
-const mockDocuments: Document[] = [
-  {
-    id: '1',
-    title: 'Income Tax Return 2024',
-    type: 'PDF',
-    size: '2.4 MB',
-    uploadDate: new Date('2024-03-15'),
-    lastModified: new Date('2024-03-20'),
-    tags: ['Tax', 'Financial', 'Important', 'ITR'],
-    isShared: true,
-    accessLevel: 'family',
-    aiSummary: 'Income tax return for FY 2023-24. Total income ₹12,50,000. Tax liability ₹1,87,500. Claimed deductions under 80C, 80D.',
-    extractedText: 'Income Tax Return for Assessment Year 2024-25...',
-    status: 'processed',
-    metadata: { pages: 16, language: 'English' }
-  },
-  {
-    id: '2',
-    title: 'Salary Certificate March 2024',
-    type: 'PDF',
-    size: '856 KB',
-    uploadDate: new Date('2024-03-10'),
-    lastModified: new Date('2024-03-10'),
-    tags: ['Salary', 'Employment', 'Certificate'],
-    isShared: false,
-    accessLevel: 'private',
-    aiSummary: 'Salary certificate from ABC Corp for March 2024. Gross salary ₹85,000. Basic ₹45,000, HRA ₹20,000.',
-    extractedText: 'This is to certify that Mr. John Doe...',
-    status: 'processed',
-    metadata: { pages: 1, language: 'English' }
-  },
-  {
-    id: '3',
-    title: 'PAN Card Copy',
-    type: 'IMAGE',
-    size: '1.2 MB',
-    uploadDate: new Date('2024-02-28'),
-    lastModified: new Date('2024-02-28'),
-    tags: ['Identity', 'PAN', 'Government'],
-    isShared: true,
-    accessLevel: 'family',
-    aiSummary: 'PAN Card - ABCDE1234F issued to John Doe. Date of birth: 15/06/1990.',
-    extractedText: 'INCOME TAX DEPARTMENT GOVT. OF INDIA...',
-    status: 'processed'
-  }
-];
 
 const timelineData = [
   {
@@ -130,19 +85,96 @@ export default function CategoryFolder() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showSmartTags, setShowSmartTags] = useState(false);
   const [expandedTimelineItems, setExpandedTimelineItems] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [categoryName, setCategoryName] = useState('Documents');
+  const [loading, setLoading] = useState(true);
 
-  const categoryNames: { [key: string]: string } = {
-    '1': 'Tax Documents',
-    '2': 'Insurance',
-    '3': 'Banking',
-    '4': 'Legal',
-    '5': 'Medical',
-    '6': 'Personal'
+  useEffect(() => {
+    if (categoryId) {
+      fetchCategoryAndDocuments();
+    }
+  }, [categoryId]);
+
+  const fetchCategoryAndDocuments = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch category details
+      const { data: category, error: categoryError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('id', categoryId)
+        .single();
+
+      if (categoryError) {
+        console.error('Error fetching category:', categoryError);
+        return;
+      }
+
+      setCategoryName(category?.name || 'Documents');
+
+      // Fetch documents in this category
+      const { data: documentsData, error: documentsError } = await supabase
+        .from('documents')
+        .select(`
+          *,
+          document_tags (
+            tag,
+            is_ai_generated
+          )
+        `)
+        .eq('category', category?.name)
+        .order('created_at', { ascending: false });
+
+      if (documentsError) {
+        console.error('Error fetching documents:', documentsError);
+        return;
+      }
+
+      // Transform data to match Document interface
+      const transformedDocuments: Document[] = documentsData.map(doc => ({
+        id: doc.id,
+        title: doc.name,
+        type: getFileType(doc.mime_type || doc.file_type),
+        size: formatFileSize(doc.size),
+        uploadDate: new Date(doc.created_at),
+        lastModified: new Date(doc.updated_at),
+        tags: doc.document_tags?.map((tag: any) => tag.tag) || doc.ai_tags || [],
+        isShared: doc.shared_with_family || false,
+        accessLevel: doc.shared_with_family ? 'family' : 'private',
+        aiSummary: doc.ai_summary || 'No AI summary available',
+        extractedText: doc.extracted_text || '',
+        status: doc.status || 'processed',
+        metadata: {
+          pages: doc.pages,
+          language: doc.language_detected
+        }
+      }));
+
+      setDocuments(transformedDocuments);
+    } catch (error) {
+      console.error('Error in fetchCategoryAndDocuments:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const categoryName = categoryNames[categoryId || '1'] || 'Documents';
+  const getFileType = (mimeType?: string): 'PDF' | 'IMAGE' | 'DOC' | 'EXCEL' => {
+    if (!mimeType) return 'DOC';
+    if (mimeType.includes('pdf')) return 'PDF';
+    if (mimeType.includes('image')) return 'IMAGE';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'EXCEL';
+    return 'DOC';
+  };
 
-  const filteredDocuments = mockDocuments
+  const formatFileSize = (bytes?: number): string => {
+    if (!bytes) return '0 KB';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const filteredDocuments = documents
     .filter(doc => 
       doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       doc.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -361,7 +393,7 @@ export default function CategoryFolder() {
                 <Card 
                   key={doc.id} 
                   className="group hover:shadow-lg transition-all duration-300 cursor-pointer"
-                  onClick={() => setSelectedDocument(doc)}
+                  onClick={() => navigate(`/document/${doc.id}`)}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -439,7 +471,7 @@ export default function CategoryFolder() {
                 <Card 
                   key={doc.id} 
                   className="hover:shadow-md transition-all duration-300 cursor-pointer"
-                  onClick={() => setSelectedDocument(doc)}
+                  onClick={() => navigate(`/document/${doc.id}`)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
@@ -526,7 +558,7 @@ export default function CategoryFolder() {
                 {expandedTimelineItems.includes(timelineItem.date) && (
                   <div className="ml-12 space-y-3">
                     {timelineItem.events.map((event) => {
-                      const doc = mockDocuments.find(d => d.id === event.id);
+                      const doc = documents.find(d => d.id === event.id);
                       if (!doc) return null;
                       
                       const FileIcon = getFileIcon(doc.type);

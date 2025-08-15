@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   ArrowLeft, Tag, Search, Filter, Plus, Edit, Trash2, Brain,
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SmartTag {
   id: string;
@@ -150,12 +152,135 @@ const mockTaggedDocuments: TaggedDocument[] = [
 
 export default function SmartTags() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<SmartTag | null>(null);
   const [showTagDetails, setShowTagDetails] = useState(false);
+  const [smartTags, setSmartTags] = useState<SmartTag[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const filteredTags = mockSmartTags.filter(tag => {
+  useEffect(() => {
+    fetchSmartTags();
+  }, []);
+
+  const fetchSmartTags = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch smart tags from database
+      const { data: tags, error: tagsError } = await supabase
+        .from('smart_tags')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (tagsError) {
+        console.error('Error fetching smart tags:', tagsError);
+        return;
+      }
+
+      // Transform data to match SmartTag interface
+      const transformedTags: SmartTag[] = tags.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        description: tag.description || 'AI-generated smart tag',
+        confidence: 85 + Math.random() * 15, // Mock confidence for now
+        documentCount: tag.document_count || 0,
+        category: 'custom',
+        color: tag.color || 'bg-primary/10 text-primary border-primary/20',
+        aiGenerated: tag.is_system_generated || false,
+        createdDate: new Date(tag.created_at),
+        lastUsed: new Date(tag.updated_at),
+        relatedTags: [],
+        suggestedActions: ['Review documents', 'Update tags', 'Create filters']
+      }));
+
+      setSmartTags([...mockSmartTags, ...transformedTags]);
+    } catch (error) {
+      console.error('Error in fetchSmartTags:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateNewTags = async () => {
+    try {
+      setIsGenerating(true);
+      
+      // This would typically call an AI service
+      // For now, we'll create a sample tag
+      const newTag = {
+        name: `Smart Tag ${Date.now()}`,
+        description: 'AI-generated tag based on document analysis',
+        color: '#7C3AED',
+        ai_query: 'auto-generated',
+        is_system_generated: true
+      };
+
+      const { data, error } = await supabase
+        .from('smart_tags')
+        .insert(newTag)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "New Tag Generated",
+        description: `Created "${newTag.name}" smart tag`,
+      });
+
+      await fetchSmartTags();
+    } catch (error) {
+      console.error('Error generating new tags:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate new tags",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const createCustomTag = async () => {
+    try {
+      const tagName = prompt('Enter tag name:');
+      if (!tagName) return;
+
+      const newTag = {
+        name: tagName,
+        description: `Custom tag: ${tagName}`,
+        color: '#7C3AED',
+        is_system_generated: false
+      };
+
+      const { data, error } = await supabase
+        .from('smart_tags')
+        .insert(newTag)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Tag Created",
+        description: `Created "${tagName}" custom tag`,
+      });
+
+      await fetchSmartTags();
+    } catch (error) {
+      console.error('Error creating custom tag:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create custom tag",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredTags = smartTags.filter(tag => {
     const matchesSearch = tag.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          tag.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || tag.category === selectedCategory;
@@ -225,11 +350,16 @@ export default function SmartTags() {
               <Button
                 variant="ghost"
                 className="text-white hover:bg-white/20"
+                onClick={generateNewTags}
+                disabled={isGenerating}
               >
                 <Zap className="w-4 h-4 mr-2" />
-                Generate New Tags
+                {isGenerating ? 'Generating...' : 'Generate New Tags'}
               </Button>
-              <Button className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+              <Button 
+                className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+                onClick={createCustomTag}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Create Custom Tag
               </Button>
@@ -244,7 +374,7 @@ export default function SmartTags() {
                   <Tag className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-white">{mockSmartTags.length}</p>
+                  <p className="text-2xl font-bold text-white">{smartTags.length}</p>
                   <p className="text-white/80 text-sm">Total Tags</p>
                 </div>
               </div>
@@ -257,7 +387,7 @@ export default function SmartTags() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">
-                    {mockSmartTags.filter(tag => tag.aiGenerated).length}
+                    {smartTags.filter(tag => tag.aiGenerated).length}
                   </p>
                   <p className="text-white/80 text-sm">AI Generated</p>
                 </div>
@@ -271,7 +401,7 @@ export default function SmartTags() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">
-                    {mockSmartTags.reduce((sum, tag) => sum + tag.documentCount, 0)}
+                    {smartTags.reduce((sum, tag) => sum + tag.documentCount, 0)}
                   </p>
                   <p className="text-white/80 text-sm">Tagged Documents</p>
                 </div>
@@ -285,7 +415,7 @@ export default function SmartTags() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-white">
-                    {Math.round(mockSmartTags.reduce((sum, tag) => sum + tag.confidence, 0) / mockSmartTags.length)}%
+                    {smartTags.length > 0 ? Math.round(smartTags.reduce((sum, tag) => sum + tag.confidence, 0) / smartTags.length) : 0}%
                   </p>
                   <p className="text-white/80 text-sm">Avg Confidence</p>
                 </div>

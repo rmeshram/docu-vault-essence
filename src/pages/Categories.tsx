@@ -1,127 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Filter, Search, SortDesc, FileText, Calendar, Tag, Folder, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
-const categoryData = [
-  { 
-    id: 1, 
-    name: "Tax Documents", 
-    icon: FileText, 
-    count: 12, 
-    color: "bg-success/10 text-success border-success/20",
-    gradientColor: "from-success/20 to-success/5",
-    documents: {
-      total: 12,
-      pending: 2,
-      duplicates: 1,
-      shared: 3
-    },
-    insights: "₹67,000 in potential tax savings found",
-    aiTags: ["High Priority", "Review Required", "Tax Season 2024"],
-    relatedTo: ["Banking", "Insurance"],
-    lastUpdated: "2 hours ago",
-    accessLevel: "Family Shared"
-  },
-  { 
-    id: 2, 
-    name: "Insurance", 
-    icon: FileText, 
-    count: 8, 
-    color: "bg-primary/10 text-primary border-primary/20",
-    gradientColor: "from-primary/20 to-primary/5",
-    documents: {
-      total: 8,
-      pending: 1,
-      duplicates: 0,
-      shared: 2
-    },
-    insights: "Health policy expires in 15 days",
-    aiTags: ["Expiring Soon", "Premium Due"],
-    relatedTo: ["Medical", "Family"],
-    lastUpdated: "1 day ago",
-    accessLevel: "Private"
-  },
-  { 
-    id: 3, 
-    name: "Banking", 
-    icon: FileText, 
-    count: 15, 
-    color: "bg-teal-500/10 text-teal-600 border-teal-500/20",
-    gradientColor: "from-teal-500/20 to-teal-500/5",
-    documents: {
-      total: 15,
-      pending: 0,
-      duplicates: 2,
-      shared: 5
-    },
-    insights: "3 statements need reconciliation",
-    aiTags: ["Monthly Statement", "Investment"],
-    relatedTo: ["Tax Documents"],
-    lastUpdated: "5 hours ago",
-    accessLevel: "Family Shared"
-  },
-  { 
-    id: 4, 
-    name: "Legal", 
-    icon: FileText, 
-    count: 5, 
-    color: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-    gradientColor: "from-purple-500/20 to-purple-500/5",
-    documents: {
-      total: 5,
-      pending: 1,
-      duplicates: 0,
-      shared: 4
-    },
-    insights: "Property registration due for renewal",
-    aiTags: ["Important", "Legal Review"],
-    relatedTo: ["Family"],
-    lastUpdated: "1 week ago",
-    accessLevel: "Family Shared"
-  },
-  { 
-    id: 5, 
-    name: "Medical", 
-    icon: FileText, 
-    count: 7, 
-    color: "bg-red-500/10 text-red-600 border-red-500/20",
-    gradientColor: "from-red-500/20 to-red-500/5",
-    documents: {
-      total: 7,
-      pending: 0,
-      duplicates: 0,
-      shared: 7
-    },
-    insights: "Mom's checkup scheduled for next week",
-    aiTags: ["Family Health", "Appointment"],
-    relatedTo: ["Insurance"],
-    lastUpdated: "3 days ago",
-    accessLevel: "Family Shared"
-  },
-  { 
-    id: 6, 
-    name: "Personal", 
-    icon: FileText, 
-    count: 23, 
-    color: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    gradientColor: "from-blue-500/20 to-blue-500/5",
-    documents: {
-      total: 23,
-      pending: 3,
-      duplicates: 4,
-      shared: 8
-    },
-    insights: "4 receipts need expense categorization",
-    aiTags: ["Receipts", "Personal"],
-    relatedTo: ["Banking"],
-    lastUpdated: "Just now",
-    accessLevel: "Private"
-  },
-];
+interface CategoryData {
+  id: string;
+  name: string;
+  icon: any;
+  count: number;
+  color: string;
+  gradientColor: string;
+  documents: {
+    total: number;
+    pending: number;
+    duplicates: number;
+    shared: number;
+  };
+  insights: string;
+  aiTags: string[];
+  relatedTo: string[];
+  lastUpdated: string;
+  accessLevel: string;
+}
 
 const sortOptions = [
   { value: "newest", label: "Newest First" },
@@ -132,9 +37,84 @@ const sortOptions = [
 ];
 
 export default function Categories() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showFilters, setShowFilters] = useState(false);
+  const [categoryData, setCategoryData] = useState<CategoryData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch categories from database
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (categoriesError) {
+        console.error('Error fetching categories:', categoriesError);
+        return;
+      }
+
+      // Fetch document counts per category
+      const { data: documents, error: documentsError } = await supabase
+        .from('documents')
+        .select('category');
+
+      if (documentsError) {
+        console.error('Error fetching documents:', documentsError);
+        return;
+      }
+
+      // Process categories with document counts
+      const categoryColors = [
+        { color: "bg-success/10 text-success border-success/20", gradientColor: "from-success/20 to-success/5" },
+        { color: "bg-primary/10 text-primary border-primary/20", gradientColor: "from-primary/20 to-primary/5" },
+        { color: "bg-teal-500/10 text-teal-600 border-teal-500/20", gradientColor: "from-teal-500/20 to-teal-500/5" },
+        { color: "bg-purple-500/10 text-purple-600 border-purple-500/20", gradientColor: "from-purple-500/20 to-purple-500/5" },
+        { color: "bg-red-500/10 text-red-600 border-red-500/20", gradientColor: "from-red-500/20 to-red-500/5" },
+        { color: "bg-blue-500/10 text-blue-600 border-blue-500/20", gradientColor: "from-blue-500/20 to-blue-500/5" },
+      ];
+
+      const processedCategories: CategoryData[] = categories.map((category, index) => {
+        const categoryDocs = documents?.filter(doc => doc.category === category.name) || [];
+        const colorIndex = index % categoryColors.length;
+        
+        return {
+          id: category.id,
+          name: category.name,
+          icon: FileText,
+          count: categoryDocs.length,
+          color: categoryColors[colorIndex].color,
+          gradientColor: categoryColors[colorIndex].gradientColor,
+          documents: {
+            total: categoryDocs.length,
+            pending: Math.floor(categoryDocs.length * 0.1),
+            duplicates: Math.floor(categoryDocs.length * 0.05),
+            shared: Math.floor(categoryDocs.length * 0.3),
+          },
+          insights: `${categoryDocs.length} documents organized`,
+          aiTags: ["AI Generated", "Smart Category"],
+          relatedTo: ["System"],
+          lastUpdated: "Recently",
+          accessLevel: "Personal"
+        };
+      });
+
+      setCategoryData(processedCategories);
+    } catch (error) {
+      console.error('Error in fetchCategories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredCategories = categoryData
     .filter(category =>
@@ -403,7 +383,8 @@ export default function Categories() {
           {filteredCategories.map((category) => (
             <Card 
               key={category.id} 
-              className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary/20"
+              className="group overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-primary/20 cursor-pointer"
+              onClick={() => navigate(`/category/${category.id}`)}
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4 mb-6">
