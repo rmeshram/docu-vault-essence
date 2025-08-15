@@ -7,20 +7,23 @@ const corsHeaders = {
 }
 
 interface FamilyVaultRequest {
-  action: 'create' | 'invite' | 'join' | 'update_permissions' | 'remove_member' | 'get_vault' | 'list_members';
+  action: 'create' | 'invite' | 'join' | 'update_permissions' | 'remove_member' | 'get_vault' | 'list_members' | 'emergency_access';
   vaultId?: string;
   vaultData?: {
     name: string;
     description?: string;
     member_limit?: number;
     emergency_access_enabled?: boolean;
+    encryption_level?: string;
   };
   memberData?: {
     email?: string;
     role?: 'owner' | 'admin' | 'member' | 'viewer' | 'emergency';
     permissions?: any;
+    emergency_contact?: boolean;
   };
   memberId?: string;
+  emergencyCode?: string;
 }
 
 serve(async (req) => {
@@ -52,7 +55,7 @@ serve(async (req) => {
       throw new Error('User profile not found')
     }
 
-    const { action, vaultId, vaultData, memberData, memberId }: FamilyVaultRequest = await req.json()
+    const { action, vaultId, vaultData, memberData, memberId, emergencyCode }: FamilyVaultRequest = await req.json()
 
     let result: any = {}
 
@@ -62,7 +65,7 @@ serve(async (req) => {
           throw new Error('Vault data required for create action')
         }
 
-        // Check if user already has a family vault (free tier limitation)
+        // Check subscription limits
         if (userProfile.subscription_tier === 'free') {
           const { data: existingVaults } = await supabaseClient
             .from('family_vaults')
@@ -84,12 +87,19 @@ serve(async (req) => {
           }
         }
 
+        const storageLimit = getStorageLimitForTier(userProfile.subscription_tier)
+        
         const { data: newVault, error: createError } = await supabaseClient
           .from('family_vaults')
           .insert({
             ...vaultData,
             owner_id: userProfile.id,
-            storage_limit: getStorageLimitForTier(userProfile.subscription_tier)
+            storage_limit: storageLimit,
+            vault_settings: {
+              created_by: userProfile.id,
+              creation_date: new Date().toISOString(),
+              encryption_level: vaultData.encryption_level || 'standard'
+            }
           })
           .select()
           .single()
@@ -110,7 +120,9 @@ serve(async (req) => {
               can_edit: true,
               can_delete: true,
               can_share: true,
-              can_invite: true
+              can_invite: true,
+              can_manage_members: true,
+              emergency_access: true
             },
             joined_at: new Date().toISOString()
           })
@@ -136,6 +148,23 @@ serve(async (req) => {
           throw new Error('Insufficient permissions to invite members')
         }
 
+        // Check member limits
+        const { count: currentMembers } = await supabaseClient
+          .from('family_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('vault_id', vaultId)
+          .eq('status', 'active')
+
+        const { data: vault } = await supabaseClient
+          .from('family_vaults')
+          .select('member_limit')
+          .eq('id', vaultId)
+          .single()
+
+        if ((currentMembers || 0) >= (vault?.member_limit || 5)) {
+          throw new Error('Member limit reached for this vault')
+        }
+
         // Generate invitation token
         const invitationToken = crypto.randomUUID()
         const expiresAt = new Date()
@@ -147,13 +176,8 @@ serve(async (req) => {
             vault_id: vaultId,
             email: memberData.email,
             role: memberData.role || 'member',
-            permissions: memberData.permissions || {
-              can_view: true,
-              can_upload: false,
-              can_edit: false,
-              can_delete: false,
-              can_share: false
-            },
+            permissions: memberData.permissions || getDefaultPermissions(memberData.role || 'member'),
+            emergency_contact: memberData.emergency_contact || false,
             invitation_token: invitationToken,
             invitation_expires_at: expiresAt.toISOString(),
             invited_by: userProfile.id,
@@ -164,8 +188,8 @@ serve(async (req) => {
 
         if (inviteError) throw inviteError
 
-        // In production, send invitation email
-        await sendInvitationEmail(memberData.email, invitationToken, vaultId)
+        // Send invitation notification
+        await sendInvitationNotification(supabaseClient, memberData.email, invitationToken, vaultId)
 
         result = { invitation }
         break
@@ -206,115 +230,48 @@ serve(async (req) => {
         result = { member: joinedMember }
         break
 
-      case 'get_vault':
-        if (!vaultId) {
-          throw new Error('Vault ID required')
+      case 'emergency_access':
+        if (!vaultId || !emergencyCode) {
+          throw new Error('Vault ID and emergency code required')
         }
 
-        const { data: vault, error: vaultError } = await supabaseClient
-          .from('family_vaults')
-          .select(`
-            *,
-            family_members(
-              id, user_id, email, role, permissions, status, joined_at,
-              users(full_name, display_name, avatar_url)
-            )
-          `)
-          .eq('id', vaultId)
-          .single()
-
-        if (vaultError) throw vaultError
-
-        // Check if user has access to this vault
-        const hasAccess = vault.family_members.some((member: any) => 
-          member.user_id === userProfile.id && member.status === 'active'
-        )
-
-        if (!hasAccess) {
-          throw new Error('Access denied to this family vault')
-        }
-
-        result = { vault }
-        break
-
-      case 'list_members':
-        if (!vaultId) {
-          throw new Error('Vault ID required')
-        }
-
-        const { data: members, error: membersError } = await supabaseClient
+        // Verify emergency access
+        const { data: emergencyMember } = await supabaseClient
           .from('family_members')
-          .select(`
-            *,
-            users(full_name, display_name, avatar_url, email)
-          `)
-          .eq('vault_id', vaultId)
-
-        if (membersError) throw membersError
-        result = { members }
-        break
-
-      case 'update_permissions':
-        if (!memberId || !memberData?.permissions) {
-          throw new Error('Member ID and permissions required')
-        }
-
-        // Check if user has admin permissions
-        const { data: adminCheck } = await supabaseClient
-          .from('family_members')
-          .select('role')
+          .select('*')
           .eq('vault_id', vaultId)
           .eq('user_id', userProfile.id)
+          .eq('emergency_contact', true)
           .eq('status', 'active')
           .single()
 
-        if (!adminCheck || (adminCheck.role !== 'owner' && adminCheck.role !== 'admin')) {
-          throw new Error('Insufficient permissions to update member permissions')
+        if (!emergencyMember) {
+          throw new Error('Emergency access not authorized')
         }
 
-        const { data: updatedMember, error: permError } = await supabaseClient
-          .from('family_members')
-          .update({
-            permissions: memberData.permissions,
-            role: memberData.role
+        // Log emergency access
+        await supabaseClient
+          .from('audit_logs')
+          .insert({
+            user_id: userProfile.id,
+            action: 'emergency_access_used',
+            resource_type: 'family_vault',
+            resource_id: vaultId,
+            risk_level: 'high',
+            flagged_for_review: true,
+            new_values: { emergency_code_used: true }
           })
-          .eq('id', memberId)
-          .select()
-          .single()
 
-        if (permError) throw permError
-        result = { member: updatedMember }
-        break
-
-      case 'remove_member':
-        if (!memberId) {
-          throw new Error('Member ID required')
+        // Grant temporary elevated access
+        result = { 
+          emergency_access_granted: true,
+          access_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
         }
-
-        const { error: removeError } = await supabaseClient
-          .from('family_members')
-          .delete()
-          .eq('id', memberId)
-          .eq('vault_id', vaultId)
-
-        if (removeError) throw removeError
-        result = { success: true }
         break
 
       default:
         throw new Error('Invalid action')
     }
-
-    // Log activity
-    await supabaseClient
-      .from('audit_logs')
-      .insert({
-        user_id: userProfile.id,
-        action: `family_vault_${action}`,
-        resource_type: 'family_vault',
-        resource_id: vaultId || 'new',
-        new_values: { action, ...memberData, ...vaultData }
-      })
 
     return new Response(
       JSON.stringify({
@@ -343,20 +300,101 @@ serve(async (req) => {
 })
 
 function getStorageLimitForTier(tier: string): number {
-  switch (tier) {
-    case 'free': return 1073741824 // 1GB
-    case 'premium': return 53687091200 // 50GB
-    case 'family_plus': return 214748364800 // 200GB
-    case 'business': return 1099511627776 // 1TB
-    default: return 1073741824
+  const limits = {
+    'free': 1073741824, // 1GB
+    'premium': 53687091200, // 50GB
+    'family_plus': 214748364800, // 200GB
+    'business': 1099511627776 // 1TB
   }
+  return limits[tier as keyof typeof limits] || 1073741824
 }
 
-async function sendInvitationEmail(email: string, token: string, vaultId: string) {
-  // In production, integrate with email service like SendGrid, Resend, or AWS SES
-  console.log(`Sending invitation email to ${email} with token ${token} for vault ${vaultId}`)
+function getDefaultPermissions(role: string) {
+  const permissions = {
+    'owner': {
+      can_view: true,
+      can_upload: true,
+      can_edit: true,
+      can_delete: true,
+      can_share: true,
+      can_invite: true,
+      can_manage_members: true,
+      emergency_access: true
+    },
+    'admin': {
+      can_view: true,
+      can_upload: true,
+      can_edit: true,
+      can_delete: true,
+      can_share: true,
+      can_invite: true,
+      can_manage_members: true,
+      emergency_access: false
+    },
+    'member': {
+      can_view: true,
+      can_upload: true,
+      can_edit: false,
+      can_delete: false,
+      can_share: true,
+      can_invite: false,
+      can_manage_members: false,
+      emergency_access: false
+    },
+    'viewer': {
+      can_view: true,
+      can_upload: false,
+      can_edit: false,
+      can_delete: false,
+      can_share: false,
+      can_invite: false,
+      can_manage_members: false,
+      emergency_access: false
+    },
+    'emergency': {
+      can_view: true,
+      can_upload: false,
+      can_edit: false,
+      can_delete: false,
+      can_share: false,
+      can_invite: false,
+      can_manage_members: false,
+      emergency_access: true
+    }
+  }
   
-  // Mock email sending
-  const invitationUrl = `${Deno.env.get('FRONTEND_URL')}/family/join?token=${token}`
-  console.log(`Invitation URL: ${invitationUrl}`)
+  return permissions[role as keyof typeof permissions] || permissions.viewer
+}
+
+async function sendInvitationNotification(supabaseClient: any, email: string, token: string, vaultId: string) {
+  try {
+    // In production, integrate with email service
+    console.log(`Sending invitation email to ${email} for vault ${vaultId}`)
+    
+    const invitationUrl = `${Deno.env.get('FRONTEND_URL')}/family/join?token=${token}`
+    
+    // Create notification for the invited user (if they have an account)
+    const { data: invitedUser } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (invitedUser) {
+      await supabaseClient
+        .from('notifications')
+        .insert({
+          user_id: invitedUser.id,
+          type: 'family_invite',
+          title: 'Family Vault Invitation',
+          message: 'You have been invited to join a family document vault',
+          action_url: invitationUrl,
+          action_data: { vault_id: vaultId, token: token }
+        })
+    }
+
+    console.log(`Invitation URL: ${invitationUrl}`)
+  } catch (error) {
+    console.error('Failed to send invitation notification:', error)
+  }
 }

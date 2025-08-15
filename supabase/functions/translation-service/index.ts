@@ -12,24 +12,25 @@ interface TranslationRequest {
   sourceLanguage?: string;
   documentId?: string;
   preserveFormatting?: boolean;
+  translationType?: 'document' | 'chat' | 'ui';
 }
 
 const SUPPORTED_LANGUAGES = {
-  'en': 'English',
-  'hi': 'Hindi',
-  'ta': 'Tamil',
-  'te': 'Telugu',
-  'bn': 'Bengali',
-  'mr': 'Marathi',
-  'gu': 'Gujarati',
-  'kn': 'Kannada',
-  'ml': 'Malayalam',
-  'pa': 'Punjabi',
-  'or': 'Odia',
-  'as': 'Assamese',
-  'ur': 'Urdu',
-  'sa': 'Sanskrit',
-  'ne': 'Nepali'
+  'en': { name: 'English', native: 'English', rtl: false },
+  'hi': { name: 'Hindi', native: 'हिंदी', rtl: false },
+  'ta': { name: 'Tamil', native: 'தமிழ்', rtl: false },
+  'te': { name: 'Telugu', native: 'తెలుగు', rtl: false },
+  'bn': { name: 'Bengali', native: 'বাংলা', rtl: false },
+  'mr': { name: 'Marathi', native: 'मराठी', rtl: false },
+  'gu': { name: 'Gujarati', native: 'ગુજરાતી', rtl: false },
+  'kn': { name: 'Kannada', native: 'ಕನ್ನಡ', rtl: false },
+  'ml': { name: 'Malayalam', native: 'മലയാളം', rtl: false },
+  'pa': { name: 'Punjabi', native: 'ਪੰਜਾਬੀ', rtl: false },
+  'or': { name: 'Odia', native: 'ଓଡ଼ିଆ', rtl: false },
+  'as': { name: 'Assamese', native: 'অসমীয়া', rtl: false },
+  'ur': { name: 'Urdu', native: 'اردو', rtl: true },
+  'sa': { name: 'Sanskrit', native: 'संस्कृत', rtl: false },
+  'ne': { name: 'Nepali', native: 'नेपाली', rtl: false }
 }
 
 serve(async (req) => {
@@ -66,7 +67,8 @@ serve(async (req) => {
       targetLanguage,
       sourceLanguage = 'auto',
       documentId,
-      preserveFormatting = false
+      preserveFormatting = false,
+      translationType = 'document'
     }: TranslationRequest = await req.json()
 
     if (!text || !targetLanguage) {
@@ -80,12 +82,14 @@ serve(async (req) => {
     let translatedText = ''
     let detectedSourceLanguage = sourceLanguage
     let confidence = 0
+    let translationMethod = 'fallback'
 
     try {
+      // Try Google Translate API first
       const googleTranslateApiKey = Deno.env.get('GOOGLE_TRANSLATE_API_KEY')
       
       if (googleTranslateApiKey) {
-        console.log(`Translating text to ${targetLanguage}`)
+        console.log(`Translating text to ${targetLanguage} using Google Translate`)
         
         const translateUrl = `https://translation.googleapis.com/language/translate/v2?key=${googleTranslateApiKey}`
         
@@ -108,15 +112,58 @@ serve(async (req) => {
             translatedText = translation.translatedText
             detectedSourceLanguage = translation.detectedSourceLanguage || sourceLanguage
             confidence = 95
+            translationMethod = 'google_translate'
             console.log('Google Translate completed successfully')
           }
         }
       }
 
-      // Fallback: Mock translation for demo
+      // Fallback to OpenAI for better context-aware translation
+      if (!translatedText) {
+        const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+        if (openaiApiKey) {
+          console.log(`Using OpenAI for context-aware translation to ${targetLanguage}`)
+          
+          const translationPrompt = `Translate the following text from ${sourceLanguage === 'auto' ? 'auto-detected language' : sourceLanguage} to ${targetLanguage}. 
+          
+Maintain cultural context and use appropriate formal/informal tone for Indian documents.
+${preserveFormatting ? 'Preserve the original formatting and structure.' : ''}
+${translationType === 'document' ? 'This is a document translation - maintain official terminology.' : ''}
+
+Text to translate:
+${text}
+
+Provide only the translated text without explanations.`
+
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'gpt-4',
+              messages: [{ role: 'user', content: translationPrompt }],
+              max_tokens: Math.min(text.length * 2, 2000),
+              temperature: 0.1
+            })
+          })
+
+          if (openaiResponse.ok) {
+            const openaiData = await openaiResponse.json()
+            translatedText = openaiData.choices?.[0]?.message?.content || ''
+            confidence = 88
+            translationMethod = 'openai_gpt4'
+            console.log('OpenAI translation completed successfully')
+          }
+        }
+      }
+
+      // Final fallback: Mock translation for demo
       if (!translatedText) {
         translatedText = generateMockTranslation(text, targetLanguage)
-        confidence = 80
+        confidence = 70
+        translationMethod = 'mock'
         console.log('Using mock translation for demo')
       }
 
@@ -126,8 +173,8 @@ serve(async (req) => {
       confidence = 0
     }
 
-    // If document ID provided, save translation
-    if (documentId && translatedText && confidence > 70) {
+    // Save translation if document ID provided
+    if (documentId && translatedText && confidence > 60) {
       const { data: document } = await supabaseClient
         .from('documents')
         .select('metadata')
@@ -143,6 +190,7 @@ serve(async (req) => {
             [targetLanguage]: {
               text: translatedText,
               confidence: confidence,
+              method: translationMethod,
               translated_at: new Date().toISOString(),
               source_language: detectedSourceLanguage
             }
@@ -169,7 +217,9 @@ serve(async (req) => {
           target_language: targetLanguage,
           text_length: text.length,
           confidence: confidence,
-          document_id: documentId
+          method: translationMethod,
+          document_id: documentId,
+          translation_type: translationType
         },
         time_period: 'daily',
         date_recorded: new Date().toISOString().split('T')[0]
@@ -183,7 +233,10 @@ serve(async (req) => {
           source_language: detectedSourceLanguage,
           target_language: targetLanguage,
           confidence: confidence,
-          supported_languages: SUPPORTED_LANGUAGES
+          method: translationMethod,
+          supported_languages: SUPPORTED_LANGUAGES,
+          character_count: text.length,
+          estimated_cost: calculateTranslationCost(text.length, translationMethod)
         }
       }),
       {
@@ -215,7 +268,14 @@ function generateMockTranslation(text: string, targetLanguage: string): string {
       'Document': 'दस्तावेज़',
       'Insurance': 'बीमा',
       'Tax': 'कर',
-      'Medical': 'चिकित्सा'
+      'Medical': 'चिकित्सा',
+      'Policy': 'नीति',
+      'Amount': 'राशि',
+      'Date': 'दिनांक',
+      'Name': 'नाम',
+      'Address': 'पता',
+      'Phone': 'फोन',
+      'Email': 'ईमेल'
     },
     'ta': {
       'Hello': 'வணக்கம்',
@@ -223,7 +283,12 @@ function generateMockTranslation(text: string, targetLanguage: string): string {
       'Document': 'ஆவணம்',
       'Insurance': 'காப்பீடு',
       'Tax': 'வரி',
-      'Medical': 'மருத்துவ'
+      'Medical': 'மருத்துவ',
+      'Policy': 'கொள்கை',
+      'Amount': 'தொகை',
+      'Date': 'தேதி',
+      'Name': 'பெயர்',
+      'Address': 'முகவரி'
     },
     'te': {
       'Hello': 'నమస్కారం',
@@ -231,13 +296,31 @@ function generateMockTranslation(text: string, targetLanguage: string): string {
       'Document': 'పత్రం',
       'Insurance': 'బీమా',
       'Tax': 'పన్ను',
-      'Medical': 'వైద్య'
+      'Medical': 'వైద్య',
+      'Policy': 'విధానం',
+      'Amount': 'మొత్తం',
+      'Date': 'తేదీ',
+      'Name': 'పేరు',
+      'Address': 'చిరునామా'
+    },
+    'bn': {
+      'Hello': 'নমস্কার',
+      'Thank you': 'ধন্যবাদ',
+      'Document': 'নথি',
+      'Insurance': 'বীমা',
+      'Tax': 'কর',
+      'Medical': 'চিকিৎসা',
+      'Policy': 'নীতি',
+      'Amount': 'পরিমাণ',
+      'Date': 'তারিখ',
+      'Name': 'নাম',
+      'Address': 'ঠিকানা'
     }
   }
 
   const targetTranslations = translations[targetLanguage]
   if (!targetTranslations) {
-    return `[Translated to ${targetLanguage}] ${text}`
+    return `[Translated to ${SUPPORTED_LANGUAGES[targetLanguage as keyof typeof SUPPORTED_LANGUAGES]?.native || targetLanguage}] ${text}`
   }
 
   let translatedText = text
@@ -246,4 +329,14 @@ function generateMockTranslation(text: string, targetLanguage: string): string {
   })
 
   return translatedText
+}
+
+function calculateTranslationCost(characterCount: number, method: string): number {
+  const rates = {
+    'google_translate': 0.00002, // $20 per 1M characters
+    'openai_gpt4': 0.00006, // Higher cost but better quality
+    'mock': 0
+  }
+  
+  return Math.round(characterCount * (rates[method as keyof typeof rates] || 0) * 100) / 100
 }

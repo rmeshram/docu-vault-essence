@@ -7,18 +7,21 @@ const corsHeaders = {
 }
 
 interface ReminderRequest {
-  action: 'create' | 'list' | 'update' | 'delete' | 'check_due';
+  action: 'create' | 'list' | 'update' | 'delete' | 'check_due' | 'auto_generate';
   reminderId?: string;
   reminderData?: {
     title: string;
     description?: string;
     reminder_date: string;
     category?: string;
-    urgency?: 'low' | 'medium' | 'high' | 'critical';
+    urgency?: 'low' | 'medium' | 'high';
     document_id?: string;
     amount?: string;
     auto_generation_rule?: any;
+    recurrence_pattern?: any;
+    notification_settings?: any;
   };
+  documentId?: string;
 }
 
 serve(async (req) => {
@@ -50,7 +53,7 @@ serve(async (req) => {
       throw new Error('User profile not found')
     }
 
-    const { action, reminderId, reminderData }: ReminderRequest = await req.json()
+    const { action, reminderId, reminderData, documentId }: ReminderRequest = await req.json()
 
     let result: any = {}
 
@@ -151,6 +154,15 @@ serve(async (req) => {
         }
         break
 
+      case 'auto_generate':
+        if (!documentId) {
+          throw new Error('Document ID required for auto-generation')
+        }
+        
+        const generatedReminders = await generateSmartReminders(supabaseClient, userProfile.id, documentId)
+        result = { generated_reminders: generatedReminders }
+        break
+
       default:
         throw new Error('Invalid action')
     }
@@ -192,57 +204,149 @@ serve(async (req) => {
   }
 })
 
-async function scheduleNotification(supabaseClient: any, reminder: any) {
-  // In production, integrate with Firebase Cloud Messaging or similar
-  console.log(`Scheduling notification for reminder: ${reminder.title}`)
-  
-  // For now, just log the scheduled notification
-  await supabaseClient
-    .from('audit_logs')
-    .insert({
-      user_id: reminder.user_id,
-      action: 'notification_scheduled',
-      resource_type: 'reminder',
-      resource_id: reminder.id,
-      new_values: {
-        reminder_date: reminder.reminder_date,
-        notification_type: 'push'
+async function generateSmartReminders(supabaseClient: any, userId: string, documentId: string) {
+  try {
+    const { data: document } = await supabaseClient
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .single()
+
+    if (!document) return []
+
+    const reminders = []
+    const keyInfo = document.metadata?.key_info || {}
+
+    // Generate reminders based on document type and content
+    if (document.category === 'Insurance') {
+      // Insurance renewal reminders
+      if (keyInfo.dates && keyInfo.dates.length > 0) {
+        const expiryDate = new Date(keyInfo.dates[keyInfo.dates.length - 1])
+        if (expiryDate > new Date()) {
+          const reminderDate = new Date(expiryDate)
+          reminderDate.setDate(reminderDate.getDate() - 30)
+
+          reminders.push({
+            user_id: userId,
+            document_id: documentId,
+            title: 'Insurance Policy Renewal',
+            description: `Your ${document.name} expires on ${expiryDate.toLocaleDateString()}`,
+            reminder_type: 'renewal',
+            reminder_date: reminderDate.toISOString(),
+            category: 'Insurance',
+            urgency: 'high',
+            is_auto_generated: true,
+            ai_suggested: true,
+            ai_confidence: 90
+          })
+        }
       }
-    })
+    }
+
+    if (document.category === 'Tax') {
+      // Tax filing reminders
+      const currentYear = new Date().getFullYear()
+      const taxDeadline = new Date(`${currentYear + 1}-07-31`) // July 31st deadline
+      
+      if (taxDeadline > new Date()) {
+        const reminderDate = new Date(taxDeadline)
+        reminderDate.setDate(reminderDate.getDate() - 60) // 2 months before
+
+        reminders.push({
+          user_id: userId,
+          document_id: documentId,
+          title: 'Tax Filing Reminder',
+          description: `Prepare for tax filing deadline: ${taxDeadline.toLocaleDateString()}`,
+          reminder_type: 'deadline',
+          reminder_date: reminderDate.toISOString(),
+          category: 'Tax',
+          urgency: 'medium',
+          is_auto_generated: true,
+          ai_suggested: true,
+          ai_confidence: 85
+        })
+      }
+    }
+
+    // Insert generated reminders
+    if (reminders.length > 0) {
+      const { data: insertedReminders, error } = await supabaseClient
+        .from('reminders')
+        .insert(reminders)
+        .select()
+
+      if (error) throw error
+      return insertedReminders
+    }
+
+    return []
+  } catch (error) {
+    console.error('Failed to generate smart reminders:', error)
+    return []
+  }
+}
+
+async function scheduleNotification(supabaseClient: any, reminder: any) {
+  try {
+    await supabaseClient
+      .from('notifications')
+      .insert({
+        user_id: reminder.user_id,
+        type: 'reminder',
+        title: reminder.title,
+        message: reminder.description || reminder.title,
+        scheduled_for: reminder.reminder_date,
+        related_resource_type: 'reminder',
+        related_resource_id: reminder.id,
+        action_data: {
+          reminder_id: reminder.id,
+          document_id: reminder.document_id
+        },
+        priority: reminder.urgency === 'high' ? 8 : reminder.urgency === 'medium' ? 5 : 3
+      })
+
+    console.log(`Notification scheduled for reminder: ${reminder.title}`)
+  } catch (error) {
+    console.error('Failed to schedule notification:', error)
+  }
 }
 
 async function sendReminderNotification(supabaseClient: any, userProfile: any, reminder: any) {
-  // Get user notification preferences
-  const { data: notifPrefs } = await supabaseClient
-    .from('notification_preferences')
-    .select('*')
-    .eq('user_id', userProfile.id)
-    .single()
+  try {
+    // Check user notification preferences
+    const notifPrefs = userProfile.notification_preferences || { push: true, email: true }
+    
+    if (!notifPrefs.push && !notifPrefs.email) {
+      return
+    }
 
-  if (!notifPrefs?.reminder_notifications) {
-    return
+    // Create notification record
+    await supabaseClient
+      .from('notifications')
+      .insert({
+        user_id: userProfile.id,
+        type: 'reminder',
+        title: reminder.title,
+        message: reminder.description || reminder.title,
+        delivery_channels: Object.keys(notifPrefs).filter(key => notifPrefs[key]),
+        is_sent: true,
+        sent_at: new Date().toISOString(),
+        related_resource_type: 'reminder',
+        related_resource_id: reminder.id,
+        priority: reminder.urgency === 'high' ? 8 : 5
+      })
+
+    // Mark reminder notification as sent
+    await supabaseClient
+      .from('reminders')
+      .update({ 
+        notification_sent: true,
+        notification_sent_at: new Date().toISOString()
+      })
+      .eq('id', reminder.id)
+
+    console.log(`Reminder notification sent: ${reminder.title}`)
+  } catch (error) {
+    console.error('Failed to send reminder notification:', error)
   }
-
-  // In production, send actual notifications via Firebase, email, SMS
-  console.log(`Sending reminder notification: ${reminder.title} to user ${userProfile.id}`)
-  
-  // Mark notification as sent
-  await supabaseClient
-    .from('reminders')
-    .update({ notification_sent: true })
-    .eq('id', reminder.id)
-
-  // Log notification
-  await supabaseClient
-    .from('audit_logs')
-    .insert({
-      user_id: userProfile.id,
-      action: 'notification_sent',
-      resource_type: 'reminder',
-      resource_id: reminder.id,
-      new_values: {
-        notification_type: 'reminder',
-        title: reminder.title
-      }
-    })
 }

@@ -13,6 +13,7 @@ interface ChatRequest {
   language?: string;
   includeDocumentContext?: boolean;
   voiceInput?: boolean;
+  messageType?: 'text' | 'voice' | 'image';
 }
 
 serve(async (req) => {
@@ -34,27 +35,26 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
+    // Get user profile
+    const { data: userProfile, error: userError } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    if (userError || !userProfile) {
+      throw new Error('User profile not found')
+    }
+
     const { 
       conversationId, 
       message, 
       documentIds, 
       language = 'en', 
       includeDocumentContext = true,
-      voiceInput = false 
+      voiceInput = false,
+      messageType = 'text'
     }: ChatRequest = await req.json()
-
-    console.log(`Processing chat message for user: ${user.id}`)
-
-    // Get user profile for context
-    const { data: userProfile } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('auth_user_id', user.id)
-      .single()
-
-    if (!userProfile) {
-      throw new Error('User profile not found')
-    }
 
     // Check AI query limits
     if (userProfile.ai_queries_used >= userProfile.ai_queries_limit) {
@@ -62,6 +62,8 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: 'AI query limit exceeded',
+          current_usage: userProfile.ai_queries_used,
+          limit: userProfile.ai_queries_limit,
           upgrade_required: true
         }),
         {
@@ -79,7 +81,7 @@ serve(async (req) => {
         user_id: userProfile.id,
         message: message,
         is_user_message: true,
-        message_type: voiceInput ? 'voice' : 'text',
+        message_type: messageType,
         language: language,
         related_document_ids: documentIds || []
       })
@@ -99,6 +101,7 @@ serve(async (req) => {
         .from('documents')
         .select('id, name, ai_summary, extracted_text, category, metadata')
         .eq('user_id', userProfile.id)
+        .eq('status', 'completed')
 
       if (documentIds && documentIds.length > 0) {
         documentsQuery = documentsQuery.in('id', documentIds)

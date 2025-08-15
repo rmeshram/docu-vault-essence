@@ -15,6 +15,7 @@ interface UploadRequest {
   tags?: string[];
   uploadMethod?: string;
   uploadSource?: string;
+  metadata?: any;
 }
 
 serve(async (req) => {
@@ -36,7 +37,7 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Get user profile
+    // Get user profile with current usage
     const { data: userProfile, error: userError } = await supabaseClient
       .from('users')
       .select('*')
@@ -55,8 +56,21 @@ serve(async (req) => {
       familyVaultId,
       tags = [],
       uploadMethod = 'manual',
-      uploadSource = 'web'
+      uploadSource = 'web',
+      metadata = {}
     }: UploadRequest = await req.json()
+
+    // Validate file size and type
+    const maxFileSize = 50 * 1024 * 1024 // 50MB
+    if (fileSize > maxFileSize) {
+      throw new Error('File size exceeds maximum limit of 50MB')
+    }
+
+    const allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'txt', 'webp', 'tiff']
+    const fileExtension = fileName.split('.').pop()?.toLowerCase()
+    if (!fileExtension || !allowedTypes.includes(fileExtension)) {
+      throw new Error('File type not supported')
+    }
 
     // Check storage limits
     const newStorageUsed = userProfile.storage_used + fileSize
@@ -76,28 +90,40 @@ serve(async (req) => {
       )
     }
 
-    // Check for duplicates
-    const { data: existingDocs } = await supabaseClient
+    // Check daily upload limits
+    const today = new Date().toISOString().split('T')[0]
+    const { count: todayUploads } = await supabaseClient
       .from('documents')
-      .select('id, name, file_size')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userProfile.id)
+      .gte('created_at', today)
+
+    const dailyLimit = getDailyUploadLimit(userProfile.subscription_tier)
+    if ((todayUploads || 0) >= dailyLimit) {
+      throw new Error(`Daily upload limit of ${dailyLimit} files exceeded`)
+    }
+
+    // Check for potential duplicates
+    const { data: potentialDuplicates } = await supabaseClient
+      .from('documents')
+      .select('id, name, file_size, file_hash')
       .eq('user_id', userProfile.id)
       .eq('name', fileName)
       .eq('file_size', fileSize)
 
     let isDuplicate = false
-    let duplicateAction = 'create_new'
-    
-    if (existingDocs && existingDocs.length > 0) {
+    let duplicateDocumentId = null
+
+    if (potentialDuplicates && potentialDuplicates.length > 0) {
       isDuplicate = true
-      // For now, create new version by default
-      duplicateAction = 'create_version'
+      duplicateDocumentId = potentialDuplicates[0].id
     }
 
-    // Generate file path
-    const fileExtension = fileName.split('.').pop()
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+    // Generate secure file path
     const timestamp = Date.now()
-    const filePath = `${userProfile.id}/${timestamp}_${sanitizedFileName}`
+    const randomSuffix = Math.random().toString(36).substring(2, 8)
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const filePath = `${userProfile.id}/${timestamp}_${randomSuffix}_${sanitizedFileName}`
 
     // Create document record
     const documentData = {
@@ -110,17 +136,21 @@ serve(async (req) => {
       file_type: fileType,
       mime_type: fileType,
       category: category,
-      tags: tags,
+      custom_tags: tags,
       upload_method: uploadMethod,
       upload_source: uploadSource,
-      processing_status: 'pending',
+      upload_ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
+      upload_user_agent: req.headers.get('user-agent'),
+      status: 'uploading',
+      processing_stage: 'upload',
       version_number: isDuplicate ? 2 : 1,
-      parent_document_id: isDuplicate ? existingDocs[0].id : null,
+      parent_document_id: duplicateDocumentId,
       metadata: {
+        ...metadata,
         upload_timestamp: new Date().toISOString(),
         original_size: fileSize,
         duplicate_detected: isDuplicate,
-        duplicate_action: duplicateAction
+        client_metadata: metadata
       }
     }
 
@@ -134,7 +164,7 @@ serve(async (req) => {
       throw docError
     }
 
-    // Generate signed upload URL
+    // Generate signed upload URL for Supabase Storage
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('documents')
       .createSignedUploadUrl(filePath, {
@@ -148,7 +178,10 @@ serve(async (req) => {
     // Update user storage usage
     await supabaseClient
       .from('users')
-      .update({ storage_used: newStorageUsed })
+      .update({ 
+        storage_used: newStorageUsed,
+        monthly_uploads: userProfile.monthly_uploads + 1
+      })
       .eq('id', userProfile.id)
 
     // Log upload activity
@@ -165,7 +198,9 @@ serve(async (req) => {
           category: category,
           upload_method: uploadMethod,
           duplicate_detected: isDuplicate
-        }
+        },
+        ip_address: req.headers.get('x-forwarded-for'),
+        user_agent: req.headers.get('user-agent')
       })
 
     // Record analytics
@@ -181,7 +216,8 @@ serve(async (req) => {
           file_type: fileType,
           category: category,
           upload_method: uploadMethod,
-          duplicate_detected: isDuplicate
+          duplicate_detected: isDuplicate,
+          family_vault: !!familyVaultId
         },
         time_period: 'daily',
         date_recorded: new Date().toISOString().split('T')[0]
@@ -195,9 +231,10 @@ serve(async (req) => {
           upload_url: uploadData.signedUrl,
           file_path: filePath,
           duplicate_detected: isDuplicate,
+          duplicate_document_id: duplicateDocumentId,
           storage_used: newStorageUsed,
           storage_limit: userProfile.storage_limit,
-          processing_webhook_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/document-ocr`
+          processing_webhook_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/document-processor`
         }
       }),
       {
@@ -220,3 +257,13 @@ serve(async (req) => {
     )
   }
 })
+
+function getDailyUploadLimit(tier: string): number {
+  const limits = {
+    'free': 10,
+    'premium': 100,
+    'family_plus': 200,
+    'business': 1000
+  }
+  return limits[tier as keyof typeof limits] || 10
+}
