@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useUploadStore } from "@/store/uploadStore";
 import { useDocumentUpload } from '@/hooks/useDocumentUpload'
+import { supabase } from "@/integrations/supabase/client";
 
 type FileStatus = 'queued' | 'uploading' | 'uploaded' | 'analyzing' | 'analyzed' | 'failed' | 'analysis-failed' | 'duplicate-detected' | 'version-created';
 
@@ -215,7 +216,7 @@ export default function Upload() {
 
   const processFiles = (selectedFiles: FileList) => {
     const newFiles: UploadFile[] = Array.from(selectedFiles).map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
+      id: crypto.randomUUID(),
       name: file.name,
       size: file.size,
       status: 'queued' as FileStatus,
@@ -231,184 +232,156 @@ export default function Upload() {
     setFiles(prev => [...prev, ...newFiles]);
     setIsProcessing(true);
 
-    // Process each file by calling upload hook
-    newFiles.forEach((f) => {
-      // Optimistic update
-      setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'uploading', progress: 5 } : file));
+    // Process each file using real backend calls
+    newFiles.forEach(async (f) => {
+      try {
+        console.log(`Processing file: ${f.name}`)
+        
+        // Update UI to show uploading
+        setFiles(prev => prev.map(file => 
+          file.id === f.id ? { ...file, status: 'uploading', progress: 10 } : file
+        ));
 
-      if (f.file) {
-        uploadDocument(f.file, {
-          category: selectedCategory || undefined,
-          tags: f.tags,
-          enableAI: enableAI,
-          enableOCR: true
-        }).then((result) => {
-          // If upload succeeded, mark uploaded and start analysis simulation
-          setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'uploaded', progress: 100 } : file));
+        if (f.file) {
+          console.log(`Calling uploadDocument for ${f.name}`)
+          
+          const result = await uploadDocument(f.file, {
+            category: selectedCategory || undefined,
+            tags: f.tags,
+            enableAI: enableAI,
+            enableOCR: true
+          });
 
-          // Optionally simulate AI analysis locally until function does it
-          if (enableAI) {
-            setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'analyzing', progress: 0 } : file));
+          console.log(`Upload completed for ${f.name}:`, result)
 
-            setTimeout(() => {
-              setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'analyzed', progress: 100, aiSummary: `AI processed: ${file.name}` } : file));
-            }, 2500);
-          }
-        }).catch((err) => {
-          console.error('uploadDocument failed', err);
-          setFiles(prev => prev.map(file => file.id === f.id ? { ...file, status: 'failed' } : file));
+          // Update UI to show uploaded
+          setFiles(prev => prev.map(file => 
+            file.id === f.id ? { 
+              ...file, 
+              status: 'uploaded', 
+              progress: 60 
+            } : file
+          ));
+
+          // Show analyzing status
+          setFiles(prev => prev.map(file => 
+            file.id === f.id ? { 
+              ...file, 
+              status: 'analyzing', 
+              progress: 70 
+            } : file
+          ));
+
+          // Poll for analysis completion using real database
+          const pollForAnalysis = async () => {
+            console.log(`Polling for analysis completion: ${result.documentId}`)
+            
+            const maxAttempts = 30; // 30 seconds max
+            let attempts = 0;
+            
+            const poll = async () => {
+              attempts++;
+              
+              const { data: doc, error } = await supabase
+                .from('documents')
+                .select('*')
+                .eq('id', result.documentId)
+                .single();
+
+              if (error) {
+                console.error('Error polling document:', error)
+                setFiles(prev => prev.map(file => 
+                  file.id === f.id ? { 
+                    ...file, 
+                    status: 'analysis-failed' 
+                  } : file
+                ));
+                return;
+              }
+
+              console.log(`Document status: ${doc.status}`)
+
+              if (doc.status === 'completed') {
+                // Analysis complete!
+                setFiles(prev => prev.map(file => 
+                  file.id === f.id ? { 
+                    ...file, 
+                    status: 'analyzed',
+                    progress: 100,
+                    aiSummary: doc.ai_summary,
+                    extractedText: doc.extracted_text,
+                    confidence: doc.ocr_confidence,
+                    language: doc.language_detected,
+                    category: doc.category,
+                    tags: doc.ai_tags || []
+                  } : file
+                ));
+
+                toast({
+                  title: "AI analysis complete!",
+                  description: `${f.name} analyzed successfully`,
+                  action: (
+                    <Button size="sm" onClick={() => navigate('/chat')}>
+                      Ask AI
+                    </Button>
+                  ),
+                });
+
+                return;
+              } else if (doc.status === 'error') {
+                setFiles(prev => prev.map(file => 
+                  file.id === f.id ? { 
+                    ...file, 
+                    status: 'analysis-failed'
+                  } : file
+                ));
+                return;
+              } else if (attempts >= maxAttempts) {
+                console.log('Analysis polling timeout')
+                setFiles(prev => prev.map(file => 
+                  file.id === f.id ? { 
+                    ...file, 
+                    status: 'analysis-failed'
+                  } : file
+                ));
+                return;
+              }
+
+              // Continue polling
+              setTimeout(poll, 1000);
+            };
+
+            // Start polling
+            setTimeout(poll, 1000);
+          };
+
+          // Start polling for real analysis results
+          pollForAnalysis();
+
+        } else {
+          throw new Error('No file provided')
+        }
+      } catch (err) {
+        console.error('Upload failed for file:', f.name, err);
+        setFiles(prev => prev.map(file => 
+          file.id === f.id ? { 
+            ...file, 
+            status: 'failed' 
+          } : file
+        ));
+        
+        toast({
+          title: "Upload failed",
+          description: `Failed to upload ${f.name}: ${err.message}`,
+          variant: "destructive"
         });
-      } else {
-        // fallback to simulation
-        simulateUpload(f.id);
       }
     });
 
     toast({
       title: "Files queued for processing",
-      description: `${newFiles.length} file(s) added with AI enhancement enabled`,
+      description: `${newFiles.length} file(s) added for real AI analysis`,
     });
-  };
-
-  const simulateUpload = (fileId: string) => {
-    // Start upload
-    setFiles(prev => prev.map(file => 
-      file.id === fileId ? { ...file, status: 'uploading' as FileStatus } : file
-    ));
-
-    // Simulate progress
-    const progressInterval = setInterval(() => {
-      setFiles(prev => prev.map(file => {
-        if (file.id === fileId && file.status === 'uploading') {
-          const newProgress = Math.min(file.progress + Math.random() * 25, 100);
-          if (newProgress >= 100) {
-            clearInterval(progressInterval);
-            
-            // Upload complete, start AI analysis
-            setTimeout(() => {
-              setFiles(prev => prev.map(f => 
-                f.id === fileId ? { 
-                  ...f, 
-                  status: 'uploaded' as FileStatus, 
-                  progress: 100 
-                } : f
-              ));
-              
-              // Start AI analysis if enabled
-              if (enableAI) {
-                setTimeout(() => {
-                  setFiles(prev => prev.map(f => 
-                    f.id === fileId ? { 
-                      ...f, 
-                      status: 'analyzing' as FileStatus
-                    } : f
-                  ));
-                  
-                  // Complete AI analysis
-                  setTimeout(() => {
-                    const currentFile = files.find(f => f.id === fileId);
-                    if (currentFile) {
-                      const mockAnalysis = generateMockAnalysis(currentFile.name);
-                      
-                      // Check for duplicates if enabled
-                      const isDuplicate = enableDuplicateCheck && Math.random() > 0.7;
-                      
-                      setFiles(prev => prev.map(f => 
-                        f.id === fileId ? { 
-                          ...f, 
-                          status: isDuplicate ? 'duplicate-detected' as FileStatus : 'analyzed' as FileStatus,
-                          extractedText: mockAnalysis.text,
-                          aiSummary: mockAnalysis.summary,
-                          confidence: mockAnalysis.confidence,
-                          language: mockAnalysis.language,
-                          category: mockAnalysis.category,
-                          tags: [...(f.tags || []), ...mockAnalysis.tags],
-                          duplicateOf: isDuplicate ? 'existing-doc-id' : undefined,
-                          metadata: {
-                            ...f.metadata,
-                            pages: mockAnalysis.pages,
-                            title: mockAnalysis.title,
-                            author: mockAnalysis.author
-                          }
-                        } : f
-                      ));
-
-                      // Add to global store
-                      addDocument({
-                        id: fileId,
-                        name: currentFile.name,
-                        size: currentFile.size,
-                        type: currentFile.name.split('.').pop()?.toUpperCase() || 'Unknown',
-                        extractedText: mockAnalysis.text,
-                        category: mockAnalysis.category,
-                        uploadedAt: new Date(),
-                      });
-
-                      toast({
-                        title: isDuplicate ? "Duplicate detected!" : "AI analysis complete!",
-                        description: isDuplicate 
-                          ? `Similar document found. Would you like to merge or create a new version?`
-                          : `${currentFile.name} analyzed with ${mockAnalysis.confidence}% confidence`,
-                        action: (
-                          <Button size="sm" onClick={() => navigate('/chat')}>
-                            {isDuplicate ? 'Manage Duplicate' : 'Ask AI'}
-                          </Button>
-                        ),
-                      });
-                    }
-                  }, 3000);
-                }, 1000);
-              }
-            }, 500);
-          }
-          return { ...file, progress: newProgress };
-        }
-        return file;
-      }));
-    }, 200);
-  };
-
-  const generateMockAnalysis = (filename: string) => {
-    const analyses = {
-      'aadhaar': {
-        text: 'Aadhaar Card - Unique Identification Authority of India. Name: [REDACTED], DOB: [REDACTED], Address: [REDACTED]',
-        summary: 'Aadhaar card with biometric identification details and address proof',
-        confidence: 98,
-        language: 'English/Hindi',
-        category: 'Identity',
-        tags: ['identity', 'government', 'biometric', 'address-proof'],
-        pages: 1,
-        title: 'Aadhaar Card',
-        author: 'UIDAI'
-      },
-      'pan': {
-        text: 'Permanent Account Number Card. PAN: [REDACTED], Name: [REDACTED], Father Name: [REDACTED], DOB: [REDACTED]',
-        summary: 'PAN card for tax identification and financial transactions',
-        confidence: 97,
-        language: 'English',
-        category: 'Identity',
-        tags: ['tax', 'identity', 'financial', 'government'],
-        pages: 1,
-        title: 'PAN Card',
-        author: 'Income Tax Department'
-      },
-      'default': {
-        text: `Document content extracted from ${filename}. Contains important information including dates, amounts, and key details that can be analyzed by AI for insights and organization.`,
-        summary: `AI-analyzed document with key information extracted and categorized for easy retrieval and insights.`,
-        confidence: 94,
-        language: 'Auto-detected',
-        category: selectedCategory || 'Personal',
-        tags: ['document', 'ai-processed', 'extracted'],
-        pages: Math.floor(Math.random() * 5) + 1,
-        title: filename.split('.')[0],
-        author: 'Unknown'
-      }
-    };
-
-    const key = filename.toLowerCase().includes('aadhaar') ? 'aadhaar' :
-                 filename.toLowerCase().includes('pan') ? 'pan' : 'default';
-    
-    return analyses[key];
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -437,11 +410,31 @@ export default function Upload() {
     }
   };
 
-  const retryUpload = (fileId: string) => {
-    setFiles(prev => prev.map(file => 
-      file.id === fileId ? { ...file, status: 'queued' as FileStatus, progress: 0 } : file
-    ));
-    simulateUpload(fileId);
+  const retryUpload = async (fileId: string) => {
+    const file = files.find(f => f.id === fileId);
+    if (file && file.file) {
+      setFiles(prev => prev.map(f => 
+        f.id === fileId ? { ...f, status: 'queued' as FileStatus, progress: 0 } : f
+      ));
+      
+      // Retry with real backend call
+      try {
+        const result = await uploadDocument(file.file, {
+          category: selectedCategory || undefined,
+          tags: file.tags,
+          enableAI: enableAI,
+          enableOCR: true
+        });
+        
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'uploaded' as FileStatus } : f
+        ));
+      } catch (error) {
+        setFiles(prev => prev.map(f => 
+          f.id === fileId ? { ...f, status: 'failed' as FileStatus } : f
+        ));
+      }
+    }
   };
 
   const removeFile = (fileId: string) => {
@@ -457,7 +450,6 @@ export default function Upload() {
     if (method === 'files') {
       openFileSelector();
     } else if (method === 'camera') {
-      // Mock camera functionality
       toast({
         title: "Camera feature",
         description: "Camera scanning will be available in the mobile app",

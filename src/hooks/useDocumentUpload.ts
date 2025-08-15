@@ -17,48 +17,114 @@ export const useDocumentUpload = () => {
     setProgress(0)
 
     try {
-      // If you have an edge function to create upload and return signed URL, call it.
-      // Fallback: upload directly to Supabase Storage bucket named 'documents'.
+      console.log('Starting document upload:', file.name)
+      
+      // Get the authenticated user
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('User not authenticated')
 
-      // Create a unique path
-      const filePath = `uploads/${Date.now()}-${file.name}`
+      console.log('Authenticated user:', authUser.id)
 
-      // Upload to storage
-      const { data, error } = await supabase.storage
+      const documentId = crypto.randomUUID()
+      const filePath = `${authUser.id}/${documentId}-${file.name}`
+
+      // Create document record
+      const { data: document, error: docError } = await supabase
         .from('documents')
-        .upload(filePath, file, { cacheControl: '3600', upsert: false })
+        .insert({
+          id: documentId,
+          user_id: authUser.id,
+          name: file.name,
+          mime_type: file.type,
+          size: file.size,
+          category: options.category || 'Personal',
+          tags: options.tags || [],
+          status: 'uploading'
+        })
+        .select()
+        .single()
 
-      if (error) {
-        throw error
+      if (docError) {
+        console.error('Failed to create document record:', docError)
+        throw docError
       }
 
+      console.log('Document record created:', documentId)
+      setProgress(25)
+
+      // Step 2: Upload file to storage
+      console.log('Uploading file to storage...')
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, file, { 
+          cacheControl: '3600', 
+          upsert: false 
+        })
+
+      if (uploadError) {
+        console.error('Storage upload failed:', uploadError)
+        // Update document status to error
+        await supabase
+          .from('documents')
+          .update({ status: 'error' })
+          .eq('id', documentId)
+        throw uploadError
+      }
+
+      console.log('File uploaded to storage:', uploadData.path)
       setProgress(50)
 
-      // Optionally call a processing function (edge function) to start OCR/AI
-      try {
-        await supabase.functions.invoke('document-processor', {
-          body: {
-            filePath: data?.path,
-            fileName: file.name,
-            contentType: file.type,
-            options: {
-              enableAI: options.enableAI ?? true,
-              enableOCR: options.enableOCR ?? true,
-              category: options.category,
-              tags: options.tags || []
-            }
-          }
+      // Update document with storage path
+      await supabase
+        .from('documents')
+        .update({ 
+          path: uploadData.path,
+          status: 'processing'
         })
-      } catch (fnErr) {
-        // It's ok if functions are not deployed yet
-        console.warn('document-processor function call failed', fnErr)
+        .eq('id', documentId)
+
+      setProgress(60)
+
+      // Step 3: Trigger AI processing via Edge Function
+      console.log('Starting AI analysis...')
+      const fileUrl = supabase.storage.from('documents').getPublicUrl(uploadData.path).data.publicUrl
+
+      const { data: processingResult, error: processingError } = await supabase.functions.invoke('document-processor', {
+        body: {
+          documentId: documentId,
+          fileUrl: fileUrl,
+          fileName: file.name,
+          fileType: file.type,
+          enableAI: options.enableAI ?? true,
+          enableOCR: options.enableOCR ?? true,
+          language: 'auto',
+          processingOptions: {
+            extractKeyInfo: true,
+            generateSummary: true,
+            detectDuplicates: true,
+            createEmbedding: true
+          }
+        }
+      })
+
+      if (processingError) {
+        console.error('AI processing failed:', processingError)
+        // Don't throw - file is uploaded, just analysis failed
+        await supabase
+          .from('documents')
+          .update({ status: 'error' })
+          .eq('id', documentId)
+      } else {
+        console.log('AI processing completed:', processingResult)
       }
 
       setProgress(100)
 
       return {
-        path: data?.path,
-        url: supabase.storage.from('documents').getPublicUrl(data?.path || '')
+        documentId: documentId,
+        path: uploadData.path,
+        url: fileUrl,
+        document: document
       }
     } catch (error) {
       console.error('Upload failed:', error)
