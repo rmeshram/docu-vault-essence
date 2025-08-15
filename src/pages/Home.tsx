@@ -32,6 +32,8 @@ import { familyService, type FamilyMember } from '@/services/familyService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { createMockData } from '@/services/mockDataService';
+import { createEnhancedMockData } from '@/services/enhancedMockDataService';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { useToast } from '@/hooks/use-toast';
 
 // Register Chart.js components

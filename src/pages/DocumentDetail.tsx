@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentComments } from "@/components/DocumentDetail/DocumentComments";
+import { DocumentVersions } from "@/components/DocumentDetail/DocumentVersions";
 
 interface Document {
   id: string;
@@ -211,18 +213,7 @@ export default function DocumentDetail() {
             )}
 
             {/* Comments Section */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-lg font-semibold">Comments & Collaboration</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center text-muted-foreground">
-                    <p>Comment functionality coming soon...</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <DocumentComments />
 
             {/* Extracted Text */}
             {document.extracted_text && (
@@ -356,6 +347,9 @@ export default function DocumentDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Version History */}
+            <DocumentVersions />
           </div>
         </div>
       </div>

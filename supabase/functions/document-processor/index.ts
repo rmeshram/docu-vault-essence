@@ -46,6 +46,28 @@ serve(async (req) => {
 
     console.log(`Processing document: ${fileName} (${documentId})`)
 
+    // Get document data to validate user
+    const { data: documentData, error: docError } = await supabaseClient
+      .from('documents')
+      .select('*, profiles!inner(user_id)')
+      .eq('id', documentId)
+      .single()
+
+    if (docError || !documentData) {
+      throw new Error(`Document not found: ${docError?.message || 'Unknown error'}`)
+    }
+
+    // Get user profile for insights
+    const { data: userProfile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('user_id', documentData.user_id)
+      .single()
+
+    if (profileError || !userProfile) {
+      console.warn('User profile not found, using defaults')
+    }
+
     // Update processing status
     await supabaseClient
       .from('documents')
@@ -208,8 +230,8 @@ Focus on Indian document types, financial regulations, and cultural context.`
               aiConfidence = 90 + Math.random() * 8
               
               // Create reminders for expiring documents
-              if (analysis.expiry_info?.has_expiry && analysis.expiry_info?.expiry_date) {
-                await createExpiryReminder(supabaseClient, userProfile.id, documentId, analysis.expiry_info)
+              if (analysis.expiry_info?.has_expiry && analysis.expiry_info?.expiry_date && userProfile) {
+                await createExpiryReminder(supabaseClient, userProfile.user_id || documentData.user_id, documentId, analysis.expiry_info)
               }
               
             } catch (parseError) {
@@ -298,7 +320,7 @@ Focus on Indian document types, financial regulations, and cultural context.`
         category: suggestedCategory,
         ai_tags: aiTags,
         metadata: {
-          ...documentData.metadata,
+          ...(documentData.metadata || {}),
           key_info: keyInfo,
           risk_assessment: riskAssessment,
           ocr_confidence: ocrConfidence,
@@ -315,21 +337,21 @@ Focus on Indian document types, financial regulations, and cultural context.`
 
     // Detect and create document relationships
     if (processingOptions.detectDuplicates !== false) {
-      await detectDocumentRelationships(supabaseClient, documentId, userProfile.id, extractedText)
+      await detectDocumentRelationships(supabaseClient, documentId, documentData.user_id, extractedText)
     }
 
     // Generate AI insights for the user
-    await generateUserInsights(supabaseClient, userProfile.id, documentId, suggestedCategory)
+    await generateUserInsights(supabaseClient, documentData.user_id, documentId, suggestedCategory)
 
-    // Log successful processing
+    // Log successful processing to user activity
     await supabaseClient
-      .from('audit_logs')
+      .from('user_activity')
       .insert({
-        user_id: userProfile.id,
-        action: 'document_processed',
-        resource_type: 'document',
-        resource_id: documentId,
-        new_values: {
+        user_id: documentData.user_id,
+        activity_type: 'document_processed',
+        description: `AI analysis completed for ${fileName}`,
+        metadata: {
+          document_id: documentId,
           ocr_completed: enableOCR,
           ai_analysis_completed: enableAI,
           confidence: aiConfidence,
@@ -364,20 +386,31 @@ Focus on Indian document types, financial regulations, and cultural context.`
   } catch (error) {
     console.error('Document processing error:', error)
     
-    // Update document status to failed
-    await supabaseClient
-      .from('documents')
-      .update({
-        status: 'failed',
-        processing_error: error.message,
-        processing_completed_at: new Date().toISOString()
-      })
-      .eq('id', documentId)
+    try {
+      // Update document status to failed if documentId exists
+      if (typeof documentId !== 'undefined') {
+        await supabaseClient
+          .from('documents')
+          .update({
+            status: 'failed',
+            processing_error: error.message,
+            processing_completed_at: new Date().toISOString()
+          })
+          .eq('id', documentId)
+      }
+    } catch (updateError) {
+      console.error('Failed to update document status:', updateError)
+    }
 
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: `Document processing failed: ${error.message}`,
+        details: {
+          timestamp: new Date().toISOString(),
+          function: 'document-processor',
+          error_type: error.constructor.name
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
