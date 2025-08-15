@@ -169,6 +169,41 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          comment_text: string
+          created_at: string | null
+          document_id: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string | null
+          document_id: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string | null
+          document_id?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_shares: {
         Row: {
           access_count: number | null
@@ -254,6 +289,47 @@ export type Database = {
           },
         ]
       }
+      document_versions: {
+        Row: {
+          change_description: string | null
+          created_at: string | null
+          created_by: string
+          document_id: string
+          file_size: number | null
+          file_url: string | null
+          id: string
+          version_number: number
+        }
+        Insert: {
+          change_description?: string | null
+          created_at?: string | null
+          created_by: string
+          document_id: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          version_number?: number
+        }
+        Update: {
+          change_description?: string | null
+          created_at?: string | null
+          created_by?: string
+          document_id?: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           ai_confidence: number | null
@@ -261,6 +337,7 @@ export type Database = {
           ai_tags: string[] | null
           category: Database["public"]["Enums"]["document_category"] | null
           created_at: string | null
+          download_url: string | null
           extracted_text: string | null
           file_type: string | null
           file_url: string | null
@@ -291,6 +368,7 @@ export type Database = {
           ai_tags?: string[] | null
           category?: Database["public"]["Enums"]["document_category"] | null
           created_at?: string | null
+          download_url?: string | null
           extracted_text?: string | null
           file_type?: string | null
           file_url?: string | null
@@ -321,6 +399,7 @@ export type Database = {
           ai_tags?: string[] | null
           category?: Database["public"]["Enums"]["document_category"] | null
           created_at?: string | null
+          download_url?: string | null
           extracted_text?: string | null
           file_type?: string | null
           file_url?: string | null
@@ -354,6 +433,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      emergency_access: {
+        Row: {
+          access_duration_hours: number | null
+          access_token: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          trusted_contact_email: string
+          user_id: string
+        }
+        Insert: {
+          access_duration_hours?: number | null
+          access_token?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          trusted_contact_email: string
+          user_id: string
+        }
+        Update: {
+          access_duration_hours?: number | null
+          access_token?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          trusted_contact_email?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       family_members: {
         Row: {
@@ -429,6 +541,39 @@ export type Database = {
           storage_limit?: number | null
           storage_used?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          metadata: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          metadata?: Json | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -543,7 +688,6 @@ export type Database = {
       reminders: {
         Row: {
           amount: string | null
-          category: Database["public"]["Enums"]["document_category"] | null
           completed_at: string | null
           created_at: string | null
           description: string | null
@@ -559,7 +703,6 @@ export type Database = {
         }
         Insert: {
           amount?: string | null
-          category?: Database["public"]["Enums"]["document_category"] | null
           completed_at?: string | null
           created_at?: string | null
           description?: string | null
@@ -575,7 +718,6 @@ export type Database = {
         }
         Update: {
           amount?: string | null
-          category?: Database["public"]["Enums"]["document_category"] | null
           completed_at?: string | null
           created_at?: string | null
           description?: string | null
@@ -674,15 +816,14 @@ export type Database = {
     }
     Enums: {
       document_category:
-        | "Identity"
         | "Financial"
-        | "Insurance"
         | "Medical"
         | "Legal"
+        | "Insurance"
+        | "Education"
         | "Personal"
-        | "Business"
-        | "Tax"
-        | "Personal Documents"
+        | "Identity"
+        | "Property"
       document_status: "uploading" | "processing" | "completed" | "error"
       family_role: "owner" | "admin" | "member" | "viewer"
       family_status: "pending" | "accepted" | "rejected" | "suspended"
@@ -831,15 +972,14 @@ export const Constants = {
   public: {
     Enums: {
       document_category: [
-        "Identity",
         "Financial",
-        "Insurance",
         "Medical",
         "Legal",
+        "Insurance",
+        "Education",
         "Personal",
-        "Business",
-        "Tax",
-        "Personal Documents",
+        "Identity",
+        "Property",
       ],
       document_status: ["uploading", "processing", "completed", "error"],
       family_role: ["owner", "admin", "member", "viewer"],

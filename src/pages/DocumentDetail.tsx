@@ -210,6 +210,20 @@ export default function DocumentDetail() {
               </Card>
             )}
 
+            {/* Comments Section */}
+            <Card>
+              <CardHeader>
+                <h3 className="text-lg font-semibold">Comments & Collaboration</h3>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="text-center text-muted-foreground">
+                    <p>Comment functionality coming soon...</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Extracted Text */}
             {document.extracted_text && (
               <Card>

@@ -268,7 +268,13 @@ export default function CategoryFolder() {
                 <Tag className="w-4 h-4 mr-2" />
                 Smart Tags
               </Button>
-              <Button className="bg-white/20 text-white border-white/30 hover:bg-white/30">
+              <Button 
+                className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+                onClick={() => {
+                  // For now, redirect to upload page
+                  window.location.href = '/upload';
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Upload Document
               </Button>

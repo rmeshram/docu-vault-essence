@@ -35,15 +35,30 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    // Get user profile
-    const { data: userProfile, error: userError } = await supabaseClient
-      .from('users')
+    // Check if user profile exists, create if not
+    let { data: userProfile, error: userError } = await supabaseClient
+      .from('profiles')
       .select('*')
-      .eq('auth_user_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (userError || !userProfile) {
-      throw new Error('User profile not found')
+      // Create profile if it doesn't exist
+      const { data: newProfile, error: createError } = await supabaseClient
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          full_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+          display_name: user.user_metadata?.display_name || user.email?.split('@')[0]
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating profile:', createError)
+        throw new Error('Failed to create user profile')
+      }
+      userProfile = newProfile
     }
 
     const { 
@@ -56,14 +71,17 @@ serve(async (req) => {
       messageType = 'text'
     }: ChatRequest = await req.json()
 
-    // Check AI query limits
-    if (userProfile.ai_queries_used >= userProfile.ai_queries_limit) {
+    // Check AI query limits (skip check if user doesn't have these fields)
+    const aiQueriesUsed = userProfile.ai_queries_used || 0
+    const aiQueriesLimit = userProfile.ai_queries_limit || 1000 // Default limit
+    
+    if (aiQueriesUsed >= aiQueriesLimit) {
       return new Response(
         JSON.stringify({
           success: false,
           error: 'AI query limit exceeded',
-          current_usage: userProfile.ai_queries_used,
-          limit: userProfile.ai_queries_limit,
+          current_usage: aiQueriesUsed,
+          limit: aiQueriesLimit,
           upgrade_required: true
         }),
         {
@@ -78,11 +96,9 @@ serve(async (req) => {
       .from('chat_messages')
       .insert({
         conversation_id: conversationId,
-        user_id: userProfile.id,
+        user_id: user.id,
         message: message,
         is_user_message: true,
-        message_type: messageType,
-        language: language,
         related_document_ids: documentIds || []
       })
       .select()
@@ -99,9 +115,8 @@ serve(async (req) => {
     if (includeDocumentContext) {
       let documentsQuery = supabaseClient
         .from('documents')
-        .select('id, name, ai_summary, extracted_text, category, metadata')
-        .eq('user_id', userProfile.id)
-        .eq('status', 'completed')
+        .select('id, name, ai_summary, extracted_text, category')
+        .eq('user_id', user.id)
 
       if (documentIds && documentIds.length > 0) {
         documentsQuery = documentsQuery.in('id', documentIds)
@@ -110,37 +125,16 @@ serve(async (req) => {
       const { data: documents } = await documentsQuery.limit(10)
 
       if (documents && documents.length > 0) {
-        // Use vector similarity search if available
-        try {
-          const { data: similarDocs } = await supabaseClient
-            .rpc('search_documents_by_similarity', {
-              query_text: message,
-              user_id: userProfile.id,
-              limit_count: 5
-            })
-
-          if (similarDocs && similarDocs.length > 0) {
-            relatedDocuments = similarDocs
-          } else {
-            // Fallback to keyword search
-            relatedDocuments = documents.filter(doc => {
-              const searchTerms = message.toLowerCase().split(' ')
-              const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
-              return searchTerms.some(term => docText.includes(term))
-            }).slice(0, 5)
-          }
-        } catch (error) {
-          console.log('Vector search failed, using keyword search:', error)
-          relatedDocuments = documents.filter(doc => {
-            const searchTerms = message.toLowerCase().split(' ')
-            const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
-            return searchTerms.some(term => docText.includes(term))
-          }).slice(0, 5)
-        }
+        // Use simple keyword search
+        relatedDocuments = documents.filter(doc => {
+          const searchTerms = message.toLowerCase().split(' ')
+          const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
+          return searchTerms.some(term => docText.includes(term))
+        }).slice(0, 5)
 
         if (relatedDocuments.length > 0) {
           documentContext = relatedDocuments.map(doc => 
-            `Document: ${doc.name}\nCategory: ${doc.category}\nSummary: ${doc.ai_summary || 'No summary available'}\nKey Info: ${JSON.stringify(doc.metadata?.key_info || {})}`
+            `Document: ${doc.name}\nCategory: ${doc.category}\nSummary: ${doc.ai_summary || 'No summary available'}`
           ).join('\n\n')
         }
       }
@@ -155,27 +149,22 @@ serve(async (req) => {
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
       if (openaiApiKey) {
-        const systemPrompt = `You are DocuVault AI, an intelligent document management assistant for Indian users. You help users understand and manage their personal with cultural sensitivity and local context.
+        const systemPrompt = `You are DocuVault AI, an intelligent document management assistant. You help users understand and manage their personal documents with care and accuracy.
 
 Key capabilities:
 - Document analysis and summarization
-- Multi-language support (Hindi, Tamil, Telugu, Bengali, etc.)
-- Indian financial and legal document expertise
-- Family-oriented document management
+- Organization and categorization
+- Smart insights and reminders
 - Privacy and security awareness
 
 ${documentContext ? `Context from user's documents:\n${documentContext}\n\n` : ''}
 
 Guidelines:
-- Be helpful, conversational, and culturally aware
+- Be helpful, conversational, and accurate
 - Reference specific documents when relevant
 - Suggest actionable next steps
 - Respect privacy and security concerns
-- Use Indian currency (₹) and date formats
-- Understand Indian document types (Aadhaar, PAN, etc.)
-
-User's preferred language: ${language}
-${language !== 'en' ? 'Respond in the user\'s preferred language when appropriate.' : ''}
+- Provide clear and concise responses
 
 If you don't have enough information, suggest what documents they might need to upload or how to better organize their existing documents.`
 
@@ -186,7 +175,7 @@ If you don't have enough information, suggest what documents they might need to 
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
@@ -225,19 +214,15 @@ If you don't have enough information, suggest what documents they might need to 
       .from('chat_messages')
       .insert({
         conversation_id: conversationId,
-        user_id: userProfile.id,
+        user_id: user.id,
         message: aiResponse,
         is_user_message: false,
-        language: language,
-        confidence_score: aiConfidence,
         related_document_ids: relatedDocuments.map(doc => doc.id),
-        ai_model: 'gpt-4',
-        processing_time_ms: processingTime,
-        tokens_used: tokensUsed,
         message_metadata: {
-          document_context_used: documentContext.length > 0,
-          related_documents_count: relatedDocuments.length,
-          voice_input: voiceInput
+          confidence: aiConfidence,
+          model: 'gpt-4o-mini',
+          tokens: tokensUsed,
+          processing_time: processingTime
         }
       })
       .select()
@@ -247,13 +232,15 @@ If you don't have enough information, suggest what documents they might need to 
       throw aiMessageError
     }
 
-    // Update user AI query usage
-    await supabaseClient
-      .from('users')
-      .update({ 
-        ai_queries_used: userProfile.ai_queries_used + 1 
-      })
-      .eq('id', userProfile.id)
+    // Update user AI query usage if the field exists
+    if (userProfile.ai_queries_used !== undefined) {
+      await supabaseClient
+        .from('profiles')
+        .update({ 
+          ai_queries_used: (userProfile.ai_queries_used || 0) + 1 
+        })
+        .eq('user_id', user.id)
+    }
 
     // Update conversation timestamp
     await supabaseClient
@@ -261,28 +248,7 @@ If you don't have enough information, suggest what documents they might need to 
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
 
-    // Log analytics
-    await supabaseClient
-      .from('analytics_data')
-      .insert({
-        user_id: userProfile.id,
-        metric_type: 'ai_chat_usage',
-        metric_category: 'engagement',
-        metric_value: 1,
-        metric_data: {
-          conversation_id: conversationId,
-          message_length: message.length,
-          response_length: aiResponse.length,
-          processing_time_ms: processingTime,
-          tokens_used: tokensUsed,
-          confidence: aiConfidence,
-          language: language,
-          voice_input: voiceInput,
-          documents_referenced: relatedDocuments.length
-        },
-        time_period: 'daily',
-        date_recorded: new Date().toISOString().split('T')[0]
-      })
+    // Skip analytics for now
 
     return new Response(
       JSON.stringify({
@@ -298,7 +264,7 @@ If you don't have enough information, suggest what documents they might need to 
           processing_time_ms: processingTime,
           confidence: aiConfidence,
           tokens_used: tokensUsed,
-          queries_remaining: userProfile.ai_queries_limit - userProfile.ai_queries_used - 1
+          queries_remaining: (userProfile.ai_queries_limit || 1000) - (userProfile.ai_queries_used || 0) - 1
         }
       }),
       {

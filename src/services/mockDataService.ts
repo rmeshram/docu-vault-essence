@@ -7,14 +7,14 @@ export const createMockData = async () => {
 
     console.log('Creating mock data for user:', user.id)
 
-    // Insert mock categories
+    // Insert mock categories - fixed naming to match enum
     const { error: categoriesError } = await supabase
       .from('categories')
       .upsert([
         {
           id: '550e8400-e29b-41d4-a716-446655440001',
           user_id: user.id,
-          name: 'Financial Documents',
+          name: 'Financial',
           description: 'Bank statements, tax returns, invoices',
           icon: 'DollarSign',
           color: '#10B981',
@@ -23,7 +23,7 @@ export const createMockData = async () => {
         {
           id: '550e8400-e29b-41d4-a716-446655440002',
           user_id: user.id,
-          name: 'Legal Documents',
+          name: 'Legal',
           description: 'Contracts, agreements, legal papers',
           icon: 'Scale',
           color: '#3B82F6',
@@ -41,7 +41,7 @@ export const createMockData = async () => {
         {
           id: '550e8400-e29b-41d4-a716-446655440004',
           user_id: user.id,
-          name: 'Medical Records',
+          name: 'Medical',
           description: 'Health reports, prescriptions, insurance',
           icon: 'Heart',
           color: '#EF4444',
@@ -59,7 +59,7 @@ export const createMockData = async () => {
         {
           id: '550e8400-e29b-41d4-a716-446655440006',
           user_id: user.id,
-          name: 'Property Documents',
+          name: 'Property',
           description: 'Real estate, property papers',
           icon: 'Home',
           color: '#06B6D4',
