@@ -679,82 +679,7 @@ export default function Home() {
           </Card>
         </div>
 
-        {/* DigiLocker Integration Banner */}
-        <Card className="bg-muted/20">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Database className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="font-bold text-lg">Join 434M+ DigiLocker users with AI</p>
-                  <p className="text-muted-foreground text-sm">Growing at {userStats.cagr}% CAGR • Trusted by millions</p>
-                </div>
-              </div>
-              <Badge className="bg-success/10 text-success">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                {userStats.cagr}% CAGR
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Purple Hero Section */}
-        <Card className="bg-gradient-to-br from-primary to-purple-600 text-white border-0 shadow-lg">
-          <CardContent className="p-8">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h2 className="text-3xl font-bold mb-4">
-                  Your Documents, Understood Instantly
-                </h2>
-                <p className="text-white/90 mb-6 text-lg">
-                  Transform your document storage into AI intelligence. Chat, analyze, and get insights in 15+ Indian languages including Hindi, Tamil, Telugu, and more.
-                </p>
-                <div className="flex gap-3 mb-4">
-                  <Button 
-                    onClick={() => navigate('/chat')}
-                    className="bg-white text-primary hover:bg-white/90 font-semibold"
-                  >
-                    <Brain className="w-4 h-4 mr-2" />
-                    Try AI Chat
-                  </Button>
-                  <Button variant="outline" className="border-white text-white hover:bg-white/10">
-                    Bank-level security
-                  </Button>
-                </div>
-              </div>
-              
-              {/* AI Chat Demo */}
-              <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                    <MessageCircle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium">AI Assistant</span>
-                    <Badge className="ml-2 bg-success/20 text-white text-xs">Live</Badge>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="bg-white/10 rounded-lg p-3">
-                    <p className="text-sm text-white/80">मेरी हेल्थ इंश्योरेंस कब खत्म होगी?</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-3 text-primary">
-                    <p className="text-sm font-bold mb-1">AI Response:</p>
-                    <p className="text-sm font-semibold">Health Insurance expires on May 15, 2024</p>
-                    <div className="flex gap-2 mt-2">
-                      <Badge className="bg-primary/20 text-primary text-xs">Auto-translated</Badge>
-                      <Badge className="bg-success/20 text-success text-xs">Savings found</Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Your Dashboard */}
+               {/* Your Dashboard */}
         <div>
           <h2 className="text-2xl font-bold mb-6">Your Dashboard</h2>
           
@@ -859,6 +784,85 @@ export default function Home() {
           </div>
         </div>
 
+
+        {/* DigiLocker Integration Banner */}
+        <Card className="bg-muted/20">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Database className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-bold text-lg">Join 434M+ DigiLocker users with AI</p>
+                  <p className="text-muted-foreground text-sm">Growing at {userStats.cagr}% CAGR • Trusted by millions</p>
+                </div>
+              </div>
+              <Badge className="bg-success/10 text-success">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                {userStats.cagr}% CAGR
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+     
+        {/* Purple Hero Section */}
+        <Card className="bg-gradient-to-br from-primary to-purple-600 text-white border-0 shadow-lg">
+          <CardContent className="p-8">
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">
+                  Your Documents, Understood Instantly
+                </h2>
+                <p className="text-white/90 mb-6 text-lg">
+                  Transform your document storage into AI intelligence. Chat, analyze, and get insights in 15+ Indian languages including Hindi, Tamil, Telugu, and more.
+                </p>
+                <div className="flex gap-3 mb-4">
+                  <Button 
+                    onClick={() => navigate('/chat')}
+                    className="bg-white text-primary hover:bg-white/90 font-semibold"
+                  >
+                    <Brain className="w-4 h-4 mr-2" />
+                    Try AI Chat
+                  </Button>
+                  <Button variant="outline" className="border-white text-white hover:bg-white/10">
+                    Bank-level security
+                  </Button>
+                </div>
+              </div>
+              
+              {/* AI Chat Demo */}
+              <div className="bg-white/10 rounded-xl p-6 backdrop-blur-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <MessageCircle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium">AI Assistant</span>
+                    <Badge className="ml-2 bg-success/20 text-white text-xs">Live</Badge>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-white/10 rounded-lg p-3">
+                    <p className="text-sm text-white/80">मेरी हेल्थ इंश्योरेंस कब खत्म होगी?</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 text-primary">
+                    <p className="text-sm font-bold mb-1">AI Response:</p>
+                    <p className="text-sm font-semibold">Health Insurance expires on May 15, 2024</p>
+                    <div className="flex gap-2 mt-2">
+                      <Badge className="bg-primary/20 text-primary text-xs">Auto-translated</Badge>
+                      <Badge className="bg-success/20 text-success text-xs">Savings found</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+    
+
         {/* Recent Documents */}
         <div>
           <div className="flex items-center justify-between mb-6">
@@ -871,6 +875,7 @@ export default function Home() {
               Timeline View →
             </Button>
           </div>
+
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {recentDocs.length > 0 ? (
@@ -974,137 +979,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Enhanced Dashboard with Charts */}
-        <section className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Your Dashboard</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Document Categories with Chart */}
-            <Card className="bg-gradient-card border-0 shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-primary" />
-                  Document Categories
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-48 mb-4">
-                  <Pie data={categoryChartData} options={categoryChartOptions} />
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { name: "Financial", count: 45, color: "bg-green-500", icon: FileText, trend: "+5" },
-                    { name: "Identity", count: 32, color: "bg-blue-500", icon: User, trend: "+2" },
-                    { name: "Insurance", count: 28, color: "bg-amber-500", icon: Shield, trend: "+1" },
-                    { name: "Medical", count: 24, color: "bg-red-500", icon: Heart, trend: "+3" }
-                  ].map((category) => (
-                    <div key={category.name} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 ${category.color} rounded-lg flex items-center justify-center`}>
-                          <category.icon className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="text-sm font-medium">{category.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{category.count}</Badge>
-                        <Badge className="bg-success/20 text-success text-xs">{category.trend}</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* AI Insights with Predictions */}
-            <Card className="bg-gradient-card border-0 shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-primary" />
-                  AI Predictions
-                  <Badge className="bg-success/20 text-success border-success/30 ml-auto">Live</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-primary">Tax Savings Found</p>
-                    <Badge className="bg-success/20 text-success text-xs">New</Badge>
-                  </div>
-                  <p className="text-2xl font-bold text-primary">₹67,000</p>
-                  <p className="text-xs text-muted-foreground">5 deductions identified by AI</p>
-                </div>
-                <div className="bg-warning/10 p-4 rounded-xl border border-warning/20">
-                  <p className="text-sm font-medium text-warning mb-2">Risk Assessment</p>
-                  <p className="text-2xl font-bold text-warning">2 High</p>
-                  <p className="text-xs text-muted-foreground">Insurance expiring soon</p>
-                </div>
-                <div className="bg-success/10 p-4 rounded-xl border border-success/20">
-                  <p className="text-sm font-medium text-success mb-2">Family Health Score</p>
-                  <p className="text-2xl font-bold text-success">85%</p>
-                  <p className="text-xs text-muted-foreground">All members covered</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Enhanced Family Vault */}
-            <Card className="bg-gradient-card border-0 shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <Users className="w-5 h-5 text-primary" />
-                  Family Vault
-                  <Badge className="bg-success/20 text-success border-success/30 ml-auto">5 Members</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-primary/10 p-4 rounded-xl border border-primary/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-primary">Shared Storage</span>
-                    <Badge className="bg-primary/20 text-primary text-xs">50GB / 200GB</Badge>
-                  </div>
-                  <Progress value={25} className="h-2 mb-2" />
-                  <p className="text-xs text-muted-foreground">27.8GB used by family</p>
-                </div>
-                
-                <div className="space-y-3">
-                  {familyMembers.slice(0, 3).map((member) => (
-                    <div key={member.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={member.avatar_url || "/placeholder.svg"} alt={member.name} />
-                          <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
-                            {member.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className="text-sm font-medium">{member.name}</span>
-                          <p className="text-xs text-muted-foreground">{member.role}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">{member.document_count || 0} docs</Badge>
-                        <div className={`w-2 h-2 rounded-full ${
-                          member.status === 'active' ? 'bg-success' : 
-                          member.status === 'pending' ? 'bg-warning' : 'bg-destructive'
-                        }`} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 text-primary text-xs h-8">
-                    <Plus className="w-3 h-3 mr-1" />
-                    Invite Member
-                  </Button>
-                  <Button variant="outline" className="flex-1 text-primary text-xs h-8">
-                    <Shield className="w-3 h-3 mr-1" />
-                    Emergency Access
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-
+      
         {/* Recent Documents - Enhanced with AI Summaries */}
         <section>
           <div className="flex items-center justify-between mb-6">
@@ -1442,7 +1317,7 @@ export default function Home() {
         </section>
 
         {/* Enhanced Professional Services Marketplace */}
-        <section>
+        {false && <section>
           <Card className="bg-gradient-card border-0 shadow-soft">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
@@ -1508,7 +1383,7 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </section>
+        </section>  }
 
         {/* Integration Previews */}
         <section>
@@ -1546,7 +1421,7 @@ export default function Home() {
         </section>
 
         {/* Premium Upgrade Banner with ROI */}
-        <section>
+       { false &&  <section>
           <Card className="bg-gradient-accent border-0 shadow-elegant text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-20">
               <div className="w-full h-full bg-white/5 bg-[radial-gradient(circle_at_30%_70%,rgba(255,255,255,0.1),transparent)]" />
@@ -1642,10 +1517,10 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </section>
+        </section>}
 
         {/* Daily Tip Widget */}
-        <section>
+        {false && <section>
           <Card className="bg-gradient-card border-0 shadow-soft">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
@@ -1677,7 +1552,7 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </section>
+        </section>}
 
         {/* Enhanced Security Footer */}
         <section>
@@ -1718,7 +1593,7 @@ export default function Home() {
         </section>
 
         {/* Enterprise Edition Teaser */}
-        <section>
+        {false && <section>
           <Card className="bg-gradient-card border-0 shadow-soft border-2 border-primary/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -1746,7 +1621,7 @@ export default function Home() {
               </div>
             </CardContent>
           </Card>
-        </section>
+        </section>}
       </div>
 
       {/* Enhanced Floating Action Button */}
