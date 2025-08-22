@@ -30,13 +30,13 @@ export default function Sidebar() {
 
   return (
     <div className={cn(
-      "flex flex-col bg-white border-r border-border transition-all duration-300 shadow-soft",
+      "flex flex-col bg-background border-r border-border/60 transition-all duration-300",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-border">
         <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-          <div className="w-10 h-10 bg-gradient-header rounded-xl flex items-center justify-center shadow-medium">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-medium">
             <FileText className="w-6 h-6 text-white" />
           </div>
           {!isCollapsed && (
@@ -62,6 +62,9 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-3">
+        {!isCollapsed && (
+          <p className="px-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1">Main</p>
+        )}
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.href;
           
@@ -70,10 +73,10 @@ export default function Sidebar() {
               key={item.name}
               to={item.href}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
+                "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                 isActive 
-                  ? "bg-gradient-header text-white shadow-medium" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                  ? "bg-primary/10 text-primary ring-1 ring-primary/20" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted",
                 isCollapsed && "justify-center px-2"
               )}
             >

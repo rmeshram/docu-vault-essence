@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import { sanitizeFileName } from '@/lib/fileUtils'
+
 
 interface UploadOptions {
   category?: string
@@ -26,7 +28,8 @@ export const useDocumentUpload = () => {
       console.log('Authenticated user:', authUser.id)
 
       const documentId = crypto.randomUUID()
-      const filePath = `${authUser.id}/${documentId}-${file.name}`
+      const sanitizedName = sanitizeFileName(file.name)
+      const filePath = `${authUser.id}/${documentId}-${sanitizedName}`
 
       // Create document record
       const { data: document, error: docError } = await supabase
