@@ -20,18 +20,27 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('No authorization header found')
+      throw new Error('Authorization header required')
+    }
+
+    // Create client with anon key for user validation
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    const authHeader = req.headers.get('Authorization')!
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user } } = await supabaseClient.auth.getUser(token)
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token)
 
-    if (!user) {
+    if (userError || !user) {
+      console.error('User validation failed:', userError)
       throw new Error('Unauthorized')
     }
+
+    console.log('User validated:', user.id)
 
     const {
       query,
@@ -67,8 +76,14 @@ serve(async (req) => {
           const queryEmbedding = embeddingData.data?.[0]?.embedding
 
           if (queryEmbedding) {
+            // Create service role client for database queries
+            const serviceClient = createClient(
+              Deno.env.get('SUPABASE_URL') ?? '',
+              Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            )
+
             // Vector similarity search using embeddings
-            let documentsQuery = supabaseClient
+            let documentsQuery = serviceClient
               .from('documents')
               .select(`
                 *,
@@ -120,7 +135,13 @@ serve(async (req) => {
       
       const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2)
       
-      let keywordQuery = supabaseClient
+      // Use service client for fallback search too
+      const serviceClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      )
+
+      let keywordQuery = serviceClient
         .from('documents')
         .select('*')
         .eq('user_id', user.id)

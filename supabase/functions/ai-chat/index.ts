@@ -169,8 +169,12 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
         }
       } catch (ragError) {
         console.error('RAG search error:', ragError)
+        console.log('RAG response was:', ragResponse)
         // Continue with empty context if RAG fails
       }
+
+    console.log(`Final context: ${relatedDocuments.length} documents, context length: ${documentContext.length}`)
+    console.log('Document context preview:', documentContext.substring(0, 200))
     }
 
     // Generate AI response with function calling for query classification
@@ -258,9 +262,16 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
             systemPrompt += `TASK: Perform detailed analysis of the documents as requested. This may include comparisons, trend analysis, insights, or evaluations. Provide structured analysis with clear conclusions and supporting evidence from the documents.`
             break
           case 'general':
-            systemPrompt += `TASK: Engage in general conversation about documents. Provide helpful guidance, suggestions for document organization, or general assistance with document management.`
+            if (documentContext && documentContext.length > 0) {
+              systemPrompt += `TASK: Engage in conversation about the user's documents. Provide helpful insights, summaries, or answer questions based on the available document context.`
+            } else {
+              systemPrompt += `TASK: The user has uploaded documents but no specific context was found for their query. Encourage them to ask more specific questions or provide guidance on document management.`
+            }
             break
         }
+
+        console.log(`System prompt length: ${systemPrompt.length}`)
+        console.log(`Query type: ${queryType}, Document context available: ${!!documentContext}`)
 
         systemPrompt += `\n\nGuidelines:
 - Always reference specific documents when relevant
@@ -292,6 +303,9 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
           aiResponse = chatData.choices?.[0]?.message?.content || ''
           tokensUsed = chatData.usage?.total_tokens || 0
           aiConfidence = 90 + Math.random() * 8
+          console.log(`OpenAI response length: ${aiResponse.length}`)
+        } else {
+          console.error('OpenAI request failed:', await chatResponse.text())
         }
       }
 
@@ -395,46 +409,70 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
 function generateContextualResponse(message: string, relatedDocuments: any[], language: string): string {
   const lowerMessage = message.toLowerCase()
   
+  console.log(`Generating contextual response for: "${message}", ${relatedDocuments.length} documents available`)
+  
+  // If we have documents, provide insights about them
+  if (relatedDocuments && relatedDocuments.length > 0) {
+    const categories = [...new Set(relatedDocuments.map(doc => doc.category).filter(Boolean))]
+    const docNames = relatedDocuments.map(doc => doc.name).slice(0, 3)
+    
+    if (lowerMessage.includes('summarize') || lowerMessage.includes('summary')) {
+      return `I found ${relatedDocuments.length} relevant documents in your vault. Here's what I can tell you:
+
+**Documents Found:**
+${relatedDocuments.map((doc, i) => `${i+1}. **${doc.name}** (${doc.category || 'Uncategorized'})`).join('\n')}
+
+**Summary:**
+${relatedDocuments.map(doc => `• ${doc.ai_summary || 'Processing...'}`).join('\n')}
+
+Would you like me to provide more detailed analysis of any specific document?`
+    }
+
+    if (lowerMessage.includes('analyze') || lowerMessage.includes('analysis')) {
+      return `I've identified ${relatedDocuments.length} documents for analysis:
+
+${relatedDocuments.map((doc, i) => 
+  `**${i+1}. ${doc.name}**
+  - Category: ${doc.category || 'Uncategorized'}
+  - Summary: ${doc.ai_summary || 'Processing...'}
+  - Content Preview: ${doc.extracted_text ? doc.extracted_text.substring(0, 150) + '...' : 'Text extraction in progress'}`
+).join('\n\n')}
+
+I can help you with specific analysis like extracting key information, finding patterns, or answering questions about these documents.`
+    }
+
+    return `I found ${relatedDocuments.length} relevant documents in your vault:
+
+${relatedDocuments.map((doc, i) => `${i+1}. **${doc.name}** (${doc.category || 'Uncategorized'})`).join('\n')}
+
+I can help you:
+- **Summarize** these documents
+- **Extract** specific information
+- **Answer questions** about the content
+- **Analyze** patterns or insights
+
+What would you like to know about these documents?`
+  }
+  
   // Tax-related queries
   if (lowerMessage.includes('tax') || lowerMessage.includes('टैक्स') || lowerMessage.includes('itr')) {
-    if (relatedDocuments.some(doc => doc.category === 'Tax')) {
-      return language === 'hi' 
-        ? `आपके टैक्स डॉक्यूमेंट्स का विश्लेषण करने के बाद, मैंने ${relatedDocuments.length} संबंधित दस्तावेज़ पाए हैं। क्या आप किसी विशिष्ट टैक्स जानकारी के बारे में जानना चाहते हैं?`
-        : `I found ${relatedDocuments.length} tax-related documents in your vault. I can help you with tax calculations, deductions, or filing deadlines. What specific tax information do you need?`
-    } else {
-      return language === 'hi'
-        ? 'मुझे आपके टैक्स डॉक्यूमेंट्स नहीं मिले। कृपया अपने ITR, TDS सर्टिफिकेट या अन्य टैक्स दस्तावेज़ अपलोड करें।'
-        : 'I couldn\'t find any tax documents in your vault. Please upload your ITR, TDS certificates, or other tax-related documents for better assistance.'
-    }
+    return language === 'hi'
+      ? 'मुझे आपके टैक्स डॉक्यूमेंट्स नहीं मिले। कृपया अपने ITR, TDS सर्टिफिकेट या अन्य टैक्स दस्तावेज़ अपलोड करें।'
+      : 'I couldn\'t find any tax documents in your vault. Please upload your ITR, TDS certificates, or other tax-related documents for analysis.'
   }
   
   // Insurance queries
   if (lowerMessage.includes('insurance') || lowerMessage.includes('इंश्योरेंस') || lowerMessage.includes('policy')) {
-    if (relatedDocuments.some(doc => doc.category === 'Insurance')) {
-      return language === 'hi'
-        ? `आपके इंश्योरेंस पॉलिसी डॉक्यूमेंट्स मिल गए हैं। मैं आपकी कवरेज, प्रीमियम, या रिन्यूअल डेट्स के बारे में बता सकता हूं।`
-        : `I found your insurance policy documents. I can help you with coverage details, premium information, or renewal dates. What would you like to know?`
-    } else {
-      return 'I don\'t see any insurance documents uploaded yet. Upload your policy documents to get insights about coverage, premiums, and renewal dates.'
-    }
+    return 'I don\'t see any insurance documents uploaded yet. Upload your policy documents to get insights about coverage, premiums, and renewal dates.'
   }
   
   // Medical queries
   if (lowerMessage.includes('medical') || lowerMessage.includes('health') || lowerMessage.includes('मेडिकल')) {
-    if (relatedDocuments.some(doc => doc.category === 'Medical')) {
-      return 'I found your medical documents. I can help you track appointments, medications, or health records. What specific information do you need?'
-    } else {
-      return 'Upload your medical reports, prescriptions, or health records to get personalized health insights and reminders.'
-    }
+    return 'Upload your medical reports, prescriptions, or health records to get personalized health insights and reminders.'
   }
   
-  // General document queries
-  if (lowerMessage.includes('document') || lowerMessage.includes('file') || lowerMessage.includes('डॉक्यूमेंट')) {
-    return `I can see ${relatedDocuments.length} relevant documents in your vault. I can help you organize, analyze, or find specific information. What would you like me to help you with?`
-  }
-  
-  // Default response
+  // Default response with upload encouragement
   return language === 'hi'
-    ? 'मैं आपके डॉक्यूमेंट्स को समझने और व्यवस्थित करने में आपकी मदद कर सकता हूं। कृपया अपना प्रश्न स्पष्ट करें या कोई विशिष्ट दस्तावेज़ अपलोड करें।'
-    : 'I\'m here to help you understand and manage your documents. Please ask me specific questions about your documents or upload new ones for analysis.'
+    ? 'मैं आपके डॉक्यूमेंट्स का विश्लेषण करने के लिए तैयार हूं। कृपया कोई दस्तावेज़ अपलोड करें या अपने मौजूदा दस्तावेज़ों के बारे में कोई विशिष्ट प्रश्न पूछें।'
+    : 'I\'m ready to analyze your documents! Please upload some documents or ask specific questions about your existing documents. I can summarize, extract information, or provide insights about any document you share.'
 }
