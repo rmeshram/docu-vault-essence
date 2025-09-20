@@ -136,23 +136,27 @@ serve(async (req) => {
           documentContext = ragResponse.data.data.context_text || ''
           console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
         } else {
-          console.log('RAG search failed, using direct database query')
-          
-          let documentsQuery = supabaseClient
-            .from('documents')
-            .select('id, name, ai_summary, extracted_text, category, created_at')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
+        console.log('RAG search failed, using direct database query')
+        
+        let documentsQuery = supabaseClient
+          .from('documents')
+          .select('id, name, ai_summary, extracted_text, category, created_at')
+          .eq('user_id', user.id)
 
-          if (documentIds && documentIds.length > 0) {
-            documentsQuery = documentsQuery.in('id', documentIds)
-          }
+        if (documentIds && documentIds.length > 0) {
+          documentsQuery = documentsQuery.in('id', documentIds)
+          console.log('Filtering by document IDs:', documentIds)
+        } else {
+          documentsQuery = documentsQuery.order('created_at', { ascending: false })
+        }
 
-          const { data: documents, error: docError } = await documentsQuery.limit(20)
-          
-          if (docError) {
-            console.error('Database query error:', docError)
-          }
+        const { data: documents, error: docError } = await documentsQuery.limit(20)
+        
+        if (docError) {
+          console.error('Database query error:', docError)
+        } else {
+          console.log('Direct DB query found documents:', documents?.length || 0)
+        }
 
           if (documents && documents.length > 0) {
             console.log(`Found ${documents.length} documents for user`)
