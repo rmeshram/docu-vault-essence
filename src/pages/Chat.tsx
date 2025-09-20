@@ -184,7 +184,7 @@ export default function Chat() {
     
     try {
       setError(null);
-      await sendMessage(prompt, [], {
+      await sendMessage(prompt, uploadedDocumentIds, {
         language: selectedLanguage,
         includeContext: true
       });

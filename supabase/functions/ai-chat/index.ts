@@ -113,6 +113,7 @@ serve(async (req) => {
     let relatedDocuments: any[] = []
 
     console.log('Starting document context retrieval...')
+    console.log('Request parameters:', { message, documentIds, includeDocumentContext })
 
     if (includeDocumentContext) {
       try {
@@ -137,6 +138,7 @@ serve(async (req) => {
           console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
         } else {
         console.log('RAG search failed, using direct database query')
+        console.log('User ID:', user.id)
         
         let documentsQuery = supabaseClient
           .from('documents')
@@ -147,6 +149,7 @@ serve(async (req) => {
           documentsQuery = documentsQuery.in('id', documentIds)
           console.log('Filtering by document IDs:', documentIds)
         } else {
+          console.log('No specific document IDs provided, fetching recent documents')
           documentsQuery = documentsQuery.order('created_at', { ascending: false })
         }
 
@@ -156,16 +159,22 @@ serve(async (req) => {
           console.error('Database query error:', docError)
         } else {
           console.log('Direct DB query found documents:', documents?.length || 0)
+          if (documents && documents.length > 0) {
+            console.log('Sample document:', documents[0])
+          }
         }
 
           if (documents && documents.length > 0) {
             console.log(`Found ${documents.length} documents for user`)
             
-            // Use all documents if no specific search needed
-            if (message.toLowerCase().includes('all') || message.toLowerCase().includes('documents') || documentIds?.length) {
+            // For general queries like "summarize", always include recent documents
+            if (message.toLowerCase().includes('summarize') || message.toLowerCase().includes('summary') || 
+                message.toLowerCase().includes('all') || message.toLowerCase().includes('documents') || 
+                documentIds?.length) {
               relatedDocuments = documents.slice(0, 10)
+              console.log('Using documents for summary/general request:', relatedDocuments.length)
             } else {
-              // Simple keyword matching
+              // Simple keyword matching for other queries
               const searchTerms = message.toLowerCase().split(/\s+/).filter(term => term.length > 2)
               
               relatedDocuments = documents.filter(doc => {
@@ -182,6 +191,9 @@ serve(async (req) => {
               // If no keyword matches, use recent documents
               if (relatedDocuments.length === 0) {
                 relatedDocuments = documents.slice(0, 3)
+                console.log('No keyword matches, using recent documents:', relatedDocuments.length)
+              } else {
+                console.log('Found keyword matches:', relatedDocuments.length)
               }
             }
 
@@ -211,7 +223,9 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
 
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
+      console.log('OpenAI API Key available:', !!openaiApiKey)
       if (openaiApiKey) {
+        console.log('Making OpenAI API call for query classification...')
         // Classify query type
         const classificationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -255,13 +269,17 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
           })
         })
 
+        console.log('Classification response status:', classificationResponse.status)
         if (classificationResponse.ok) {
           const classificationData = await classificationResponse.json()
           const functionCall = classificationData.choices?.[0]?.message?.function_call
           if (functionCall && functionCall.name === 'classify_query') {
             const args = JSON.parse(functionCall.arguments)
             queryType = args.query_type || 'general'
+            console.log('Query classified as:', queryType)
           }
+        } else {
+          console.error('Classification API call failed:', await classificationResponse.text())
         }
 
         // Generate tailored system prompt
@@ -269,6 +287,9 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
         
         if (documentContext) {
           systemPrompt += `\n\nFull document context:\n${documentContext}\n\n`
+          console.log('Document context provided, length:', documentContext.length)
+        } else {
+          console.log('No document context available')
         }
 
         // Add type-specific instructions
@@ -295,6 +316,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
         }
 
         // Generate main response
+        console.log('Making main OpenAI API call...')
         const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -312,12 +334,18 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
           })
         })
 
+        console.log('Main response status:', chatResponse.status)
         if (chatResponse.ok) {
           const chatData = await chatResponse.json()
           aiResponse = chatData.choices?.[0]?.message?.content || ''
           tokensUsed = chatData.usage?.total_tokens || 0
           aiConfidence = 90 + Math.random() * 8
+          console.log('OpenAI response received, length:', aiResponse.length)
+        } else {
+          console.error('Main API call failed:', await chatResponse.text())
         }
+      } else {
+        console.log('No OpenAI API key found')
       }
 
       // Fallback response
@@ -325,6 +353,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
         aiResponse = generateContextualResponse(message, relatedDocuments, language)
         aiConfidence = 75
         tokensUsed = 150
+        console.log('Using fallback response, documents available:', relatedDocuments.length)
       }
 
     } catch (error) {
