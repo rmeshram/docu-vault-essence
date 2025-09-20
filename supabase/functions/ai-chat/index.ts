@@ -71,9 +71,9 @@ serve(async (req) => {
       messageType = 'text'
     }: ChatRequest = await req.json()
 
-    // Check AI query limits (skip check if user doesn't have these fields)
+    // Check AI query limits
     const aiQueriesUsed = userProfile.ai_queries_used || 0
-    const aiQueriesLimit = userProfile.ai_queries_limit || 1000 // Default limit
+    const aiQueriesLimit = userProfile.ai_queries_limit || 1000
     
     if (aiQueriesUsed >= aiQueriesLimit) {
       return new Response(
@@ -108,7 +108,7 @@ serve(async (req) => {
       throw messageError
     }
 
-    // Get document context using RAG search
+    // Get document context
     let documentContext = ''
     let relatedDocuments: any[] = []
 
@@ -117,7 +117,6 @@ serve(async (req) => {
     if (includeDocumentContext) {
       try {
         console.log('Attempting RAG search...')
-        // Use RAG search for better document retrieval
         const ragResponse = await supabaseClient.functions.invoke('rag-search', {
           body: {
             query: message,
@@ -126,22 +125,19 @@ serve(async (req) => {
             documentIds: documentIds
           },
           headers: {
-            'Authorization': authHeader  // Pass the user's auth token
+            'Authorization': authHeader
           }
         })
 
         console.log('RAG response status:', ragResponse.status)
-        console.log('RAG response data:', ragResponse.data)
 
         if (ragResponse.data?.success && ragResponse.data?.data?.relevant_documents) {
           relatedDocuments = ragResponse.data.data.relevant_documents
           documentContext = ragResponse.data.data.context_text || ''
           console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
         } else {
-          console.log('RAG search failed or returned no results, using direct database query')
+          console.log('RAG search failed, using direct database query')
           
-          // Direct database query as fallback
-          console.log('Querying documents directly from database...')
           let documentsQuery = supabaseClient
             .from('documents')
             .select('id, name, ai_summary, extracted_text, category, created_at')
@@ -150,13 +146,10 @@ serve(async (req) => {
 
           if (documentIds && documentIds.length > 0) {
             documentsQuery = documentsQuery.in('id', documentIds)
-            console.log('Filtering by specific document IDs:', documentIds)
           }
 
           const { data: documents, error: docError } = await documentsQuery.limit(20)
           
-          console.log('Database query result:', { documents: documents?.length, error: docError })
-
           if (docError) {
             console.error('Database query error:', docError)
           }
@@ -164,14 +157,12 @@ serve(async (req) => {
           if (documents && documents.length > 0) {
             console.log(`Found ${documents.length} documents for user`)
             
-            // Use all documents if no specific search needed, otherwise search
+            // Use all documents if no specific search needed
             if (message.toLowerCase().includes('all') || message.toLowerCase().includes('documents') || documentIds?.length) {
               relatedDocuments = documents.slice(0, 10)
-              console.log('Using all documents for context')
             } else {
               // Simple keyword matching
               const searchTerms = message.toLowerCase().split(/\s+/).filter(term => term.length > 2)
-              console.log('Search terms:', searchTerms)
               
               relatedDocuments = documents.filter(doc => {
                 const docText = (
@@ -181,21 +172,14 @@ serve(async (req) => {
                   (doc.category || '')
                 ).toLowerCase()
                 
-                const hasMatch = searchTerms.some(term => docText.includes(term))
-                if (hasMatch) {
-                  console.log(`Document "${doc.name}" matches search terms`)
-                }
-                return hasMatch
+                return searchTerms.some(term => docText.includes(term))
               }).slice(0, 5)
               
               // If no keyword matches, use recent documents
               if (relatedDocuments.length === 0) {
                 relatedDocuments = documents.slice(0, 3)
-                console.log('No keyword matches, using recent documents')
               }
             }
-
-            console.log(`Using ${relatedDocuments.length} documents for context`)
 
             if (relatedDocuments.length > 0) {
               documentContext = relatedDocuments.map(doc => 
@@ -205,24 +189,16 @@ Summary: ${doc.ai_summary || 'No summary available'}
 Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
               ).join('\n\n---\n\n')
             }
-          } else {
-            console.log('No documents found for user')
           }
         }
       } catch (ragError) {
         console.error('RAG search error:', ragError)
-        console.log('RAG response was:', ragResponse)
-        // Continue with empty context if RAG fails
       }
-
-    console.log(`Final context: ${relatedDocuments.length} documents, context length: ${documentContext.length}`)
-    console.log('Document context preview:', documentContext.substring(0, 200))
-    console.log('Related documents:', relatedDocuments.map(d => d.name))
-    
-    } // End of includeDocumentContext check
     }
 
-    // Generate AI response with function calling for query classification
+    console.log(`Final context: ${relatedDocuments.length} documents, context length: ${documentContext.length}`)
+
+    // Generate AI response
     let aiResponse = ''
     let aiConfidence = 0
     let tokensUsed = 0
@@ -232,7 +208,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
       if (openaiApiKey) {
-        // First, classify the query type using function calling
+        // Classify query type
         const classificationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -258,7 +234,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
                     query_type: {
                       type: 'string',
                       enum: ['summarize', 'extract_info', 'question_answer', 'analysis', 'general'],
-                      description: 'The type of query: summarize (summarize documents), extract_info (extract specific information), question_answer (answer questions about documents), analysis (analyze or compare documents), general (general conversation)'
+                      description: 'The type of query'
                     },
                     confidence: {
                       type: 'number',
@@ -281,11 +257,10 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
           if (functionCall && functionCall.name === 'classify_query') {
             const args = JSON.parse(functionCall.arguments)
             queryType = args.query_type || 'general'
-            console.log(`Query classified as: ${queryType}`)
           }
         }
 
-        // Generate tailored system prompt based on query type
+        // Generate tailored system prompt
         let systemPrompt = 'You are a helpful AI assistant for documents. Use the full context provided to give comprehensive and accurate responses.'
         
         if (documentContext) {
@@ -295,37 +270,27 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
         // Add type-specific instructions
         switch (queryType) {
           case 'summarize':
-            systemPrompt += `TASK: Provide a comprehensive summary of the relevant documents. Include key points, main themes, and important details. Structure your response clearly with headings if needed.`
+            systemPrompt += `TASK: Provide a comprehensive summary of the relevant documents.`
             break
           case 'extract_info':
-            systemPrompt += `TASK: Extract specific information requested by the user from the documents. Be precise and cite which documents the information comes from. If information is not available, clearly state what's missing.`
+            systemPrompt += `TASK: Extract specific information requested by the user from the documents.`
             break
           case 'question_answer':
-            systemPrompt += `TASK: Answer the user's question using the document context. Provide detailed answers with specific references to the documents. If you cannot answer based on available documents, explain what additional information would be needed.`
+            systemPrompt += `TASK: Answer the user's question using the document context.`
             break
           case 'analysis':
-            systemPrompt += `TASK: Perform detailed analysis of the documents as requested. This may include comparisons, trend analysis, insights, or evaluations. Provide structured analysis with clear conclusions and supporting evidence from the documents.`
+            systemPrompt += `TASK: Perform detailed analysis of the documents as requested.`
             break
           case 'general':
             if (documentContext && documentContext.length > 0) {
-              systemPrompt += `TASK: Engage in conversation about the user's documents. Provide helpful insights, summaries, or answer questions based on the available document context.`
+              systemPrompt += `TASK: Engage in conversation about the user's documents.`
             } else {
-              systemPrompt += `TASK: The user has uploaded documents but no specific context was found for their query. Encourage them to ask more specific questions or provide guidance on document management.`
+              systemPrompt += `TASK: The user has uploaded documents but no specific context was found.`
             }
             break
         }
 
-        console.log(`System prompt length: ${systemPrompt.length}`)
-        console.log(`Query type: ${queryType}, Document context available: ${!!documentContext}`)
-
-        systemPrompt += `\n\nGuidelines:
-- Always reference specific documents when relevant
-- Be comprehensive and detailed in your responses
-- If you lack sufficient information, clearly explain what's needed
-- Maintain accuracy and cite sources
-- Provide actionable insights when possible`
-
-        // Generate main response with GPT-4
+        // Generate main response
         const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -348,16 +313,11 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
           aiResponse = chatData.choices?.[0]?.message?.content || ''
           tokensUsed = chatData.usage?.total_tokens || 0
           aiConfidence = 90 + Math.random() * 8
-          console.log(`OpenAI response length: ${aiResponse.length}`)
-        } else {
-          console.error('OpenAI request failed:', await chatResponse.text())
         }
       }
 
-      // Fallback: Generate contextual response
+      // Fallback response
       if (!aiResponse) {
-        console.log('No OpenAI response, generating contextual fallback')
-        console.log(`Available documents: ${relatedDocuments.length}`)
         aiResponse = generateContextualResponse(message, relatedDocuments, language)
         aiConfidence = 75
         tokensUsed = 150
@@ -365,7 +325,6 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
 
     } catch (error) {
       console.error('AI response generation failed:', error)
-      console.log(`Generating fallback with ${relatedDocuments.length} documents`)
       aiResponse = generateContextualResponse(message, relatedDocuments, language)
       aiConfidence = 60
       tokensUsed = 100
@@ -397,7 +356,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
       throw aiMessageError
     }
 
-    // Update user AI query usage if the field exists
+    // Update user AI query usage
     if (userProfile.ai_queries_used !== undefined) {
       await supabaseClient
         .from('profiles')
@@ -412,8 +371,6 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
       .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
-
-    // Skip analytics for now
 
     return new Response(
       JSON.stringify({
@@ -461,9 +418,6 @@ function generateContextualResponse(message: string, relatedDocuments: any[], la
   
   // If we have documents, provide insights about them
   if (relatedDocuments && relatedDocuments.length > 0) {
-    const categories = [...new Set(relatedDocuments.map(doc => doc.category).filter(Boolean))]
-    const docNames = relatedDocuments.map(doc => doc.name).slice(0, 3)
-    
     if (lowerMessage.includes('summarize') || lowerMessage.includes('summary')) {
       return `I found ${relatedDocuments.length} relevant documents in your vault. Here's what I can tell you:
 
@@ -502,24 +456,7 @@ I can help you:
 What would you like to know about these documents?`
   }
   
-  // Tax-related queries
-  if (lowerMessage.includes('tax') || lowerMessage.includes('टैक्स') || lowerMessage.includes('itr')) {
-    return language === 'hi'
-      ? 'मुझे आपके टैक्स डॉक्यूमेंट्स नहीं मिले। कृपया अपने ITR, TDS सर्टिफिकेट या अन्य टैक्स दस्तावेज़ अपलोड करें।'
-      : 'I couldn\'t find any tax documents in your vault. Please upload your ITR, TDS certificates, or other tax-related documents for analysis.'
-  }
-  
-  // Insurance queries
-  if (lowerMessage.includes('insurance') || lowerMessage.includes('इंश्योरेंस') || lowerMessage.includes('policy')) {
-    return 'I don\'t see any insurance documents uploaded yet. Upload your policy documents to get insights about coverage, premiums, and renewal dates.'
-  }
-  
-  // Medical queries
-  if (lowerMessage.includes('medical') || lowerMessage.includes('health') || lowerMessage.includes('मेडिकल')) {
-    return 'Upload your medical reports, prescriptions, or health records to get personalized health insights and reminders.'
-  }
-  
-  // Default response with upload encouragement
+  // Default response when no documents found
   return language === 'hi'
     ? 'मैं आपके डॉक्यूमेंट्स का विश्लेषण करने के लिए तैयार हूं। कृपया कोई दस्तावेज़ अपलोड करें या अपने मौजूदा दस्तावेज़ों के बारे में कोई विशिष्ट प्रश्न पूछें।'
     : 'I\'m ready to analyze your documents! Please upload some documents or ask specific questions about your existing documents. I can summarize, extract information, or provide insights about any document you share.'
