@@ -165,34 +165,103 @@ serve(async (req) => {
       }
     }
 
-    // Generate AI response
+    // Generate AI response with function calling for query classification
     let aiResponse = ''
     let aiConfidence = 0
     let tokensUsed = 0
+    let queryType = 'general'
     const startTime = Date.now()
 
     try {
       const openaiApiKey = Deno.env.get('OPENAI_API_KEY')
       if (openaiApiKey) {
-        const systemPrompt = `You are DocuVault AI, an intelligent document management assistant. You help users understand and manage their personal documents with care and accuracy.
+        // First, classify the query type using function calling
+        const classificationResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openaiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4',
+            messages: [
+              { 
+                role: 'system', 
+                content: 'You are a query classifier. Analyze the user query and classify it into one of the following types: summarize, extract_info, question_answer, analysis, or general.' 
+              },
+              { role: 'user', content: message }
+            ],
+            functions: [
+              {
+                name: 'classify_query',
+                description: 'Classify the user query into a specific type',
+                parameters: {
+                  type: 'object',
+                  properties: {
+                    query_type: {
+                      type: 'string',
+                      enum: ['summarize', 'extract_info', 'question_answer', 'analysis', 'general'],
+                      description: 'The type of query: summarize (summarize documents), extract_info (extract specific information), question_answer (answer questions about documents), analysis (analyze or compare documents), general (general conversation)'
+                    },
+                    confidence: {
+                      type: 'number',
+                      description: 'Confidence level from 0 to 1'
+                    }
+                  },
+                  required: ['query_type', 'confidence']
+                }
+              }
+            ],
+            function_call: { name: 'classify_query' },
+            max_tokens: 150,
+            temperature: 0.3
+          })
+        })
 
-Key capabilities:
-- Document analysis and summarization
-- Organization and categorization
-- Smart insights and reminders
-- Privacy and security awareness
+        if (classificationResponse.ok) {
+          const classificationData = await classificationResponse.json()
+          const functionCall = classificationData.choices?.[0]?.message?.function_call
+          if (functionCall && functionCall.name === 'classify_query') {
+            const args = JSON.parse(functionCall.arguments)
+            queryType = args.query_type || 'general'
+            console.log(`Query classified as: ${queryType}`)
+          }
+        }
 
-${documentContext ? `Context from user's documents:\n${documentContext}\n\n` : ''}
+        // Generate tailored system prompt based on query type
+        let systemPrompt = 'You are a helpful AI assistant for documents. Use the full context provided to give comprehensive and accurate responses.'
+        
+        if (documentContext) {
+          systemPrompt += `\n\nFull document context:\n${documentContext}\n\n`
+        }
 
-Guidelines:
-- Be helpful, conversational, and accurate
-- Reference specific documents when relevant
-- Suggest actionable next steps
-- Respect privacy and security concerns
-- Provide clear and concise responses
+        // Add type-specific instructions
+        switch (queryType) {
+          case 'summarize':
+            systemPrompt += `TASK: Provide a comprehensive summary of the relevant documents. Include key points, main themes, and important details. Structure your response clearly with headings if needed.`
+            break
+          case 'extract_info':
+            systemPrompt += `TASK: Extract specific information requested by the user from the documents. Be precise and cite which documents the information comes from. If information is not available, clearly state what's missing.`
+            break
+          case 'question_answer':
+            systemPrompt += `TASK: Answer the user's question using the document context. Provide detailed answers with specific references to the documents. If you cannot answer based on available documents, explain what additional information would be needed.`
+            break
+          case 'analysis':
+            systemPrompt += `TASK: Perform detailed analysis of the documents as requested. This may include comparisons, trend analysis, insights, or evaluations. Provide structured analysis with clear conclusions and supporting evidence from the documents.`
+            break
+          case 'general':
+            systemPrompt += `TASK: Engage in general conversation about documents. Provide helpful guidance, suggestions for document organization, or general assistance with document management.`
+            break
+        }
 
-If you don't have enough information, suggest what documents they might need to upload or how to better organize their existing documents.`
+        systemPrompt += `\n\nGuidelines:
+- Always reference specific documents when relevant
+- Be comprehensive and detailed in your responses
+- If you lack sufficient information, clearly explain what's needed
+- Maintain accuracy and cite sources
+- Provide actionable insights when possible`
 
+        // Generate main response with GPT-4
         const chatResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -200,12 +269,12 @@ If you don't have enough information, suggest what documents they might need to 
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
             ],
-            max_tokens: 800,
+            max_tokens: 1200,
             temperature: 0.7
           })
         })
@@ -245,9 +314,10 @@ If you don't have enough information, suggest what documents they might need to 
         related_document_ids: relatedDocuments.map(doc => doc.id),
         message_metadata: {
           confidence: aiConfidence,
-          model: 'gpt-4o-mini',
+          model: 'gpt-4',
           tokens: tokensUsed,
-          processing_time: processingTime
+          processing_time: processingTime,
+          query_type: queryType
         }
       })
       .select()
@@ -289,6 +359,7 @@ If you don't have enough information, suggest what documents they might need to 
           processing_time_ms: processingTime,
           confidence: aiConfidence,
           tokens_used: tokensUsed,
+          query_type: queryType,
           queries_remaining: (userProfile.ai_queries_limit || 1000) - (userProfile.ai_queries_used || 0) - 1
         }
       }),
