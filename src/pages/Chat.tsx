@@ -7,7 +7,7 @@ import {
   User, Bot, Clock, CheckCircle, AlertCircle, Info, Star,
   Headphones, Play, Pause, SkipForward, SkipBack, Repeat,
   Shuffle, Heart, Share2, ExternalLink, Link, Tag, Folder, X,
-  ArrowRight, Users
+  ArrowRight, Users, Upload
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useAIChat } from "@/hooks/useAIChat";
 import { supabase } from "@/integrations/supabase/client";
+import { ChatFileUpload } from "@/components/ChatFileUpload";
 
 interface ChatMessage {
   id: string;
@@ -90,6 +91,8 @@ export default function Chat() {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showQuickPrompts, setShowQuickPrompts] = useState(true);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [uploadedDocumentIds, setUploadedDocumentIds] = useState<string[]>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,16 +160,23 @@ export default function Chat() {
 
     try {
       setError(null);
-      await sendMessage(inputMessage, [], {
+      await sendMessage(inputMessage, uploadedDocumentIds, {
         language: selectedLanguage,
         includeContext: true
       });
       setInputMessage('');
       setShowQuickPrompts(false);
+      // Clear uploaded document IDs after sending
+      setUploadedDocumentIds([]);
     } catch (error) {
       console.error('Failed to send message:', error);
       setError('Failed to send message. Please try again.');
     }
+  };
+
+  const handleFileUploaded = (documentId: string, fileName: string) => {
+    setUploadedDocumentIds(prev => [...prev, documentId]);
+    setShowQuickPrompts(false);
   };
 
   const handleQuickPrompt = async (prompt: string) => {
@@ -364,6 +374,29 @@ export default function Chat() {
             </Card>
           </div>
         )}
+        {/* File Upload Section */}
+        {showFileUpload && (
+          <Card className="bg-gradient-card border-0 shadow-large mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold">Upload Documents</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFileUpload(false)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <ChatFileUpload 
+                onFileUploaded={handleFileUploaded}
+                disabled={sending}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Input Area */}
         <Card className="bg-gradient-card border-0 shadow-large">
           <CardContent className="p-4">
@@ -382,8 +415,18 @@ export default function Chat() {
                 <Button
                   size="icon"
                   variant="outline"
+                  onClick={() => setShowFileUpload(!showFileUpload)}
+                  className={showFileUpload ? 'bg-primary text-primary-foreground' : ''}
+                  title="Upload documents"
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="outline"
                   onClick={() => setIsVoiceActive(!isVoiceActive)}
                   className={isVoiceActive ? 'bg-primary text-primary-foreground' : ''}
+                  title="Voice input"
                 >
                   <Mic className="w-4 h-4" />
                 </Button>
@@ -404,7 +447,13 @@ export default function Chat() {
               <div className="text-xs text-muted-foreground flex items-center gap-4">
                 <span>Press Enter to send, Shift+Enter for new line</span>
                 <span>•</span>
-                <span>{documents.length} documents available for context</span>
+                <span>{documents.length + uploadedDocumentIds.length} documents available</span>
+                {uploadedDocumentIds.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-primary">{uploadedDocumentIds.length} new files ready</span>
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">

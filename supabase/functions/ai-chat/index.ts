@@ -108,35 +108,60 @@ serve(async (req) => {
       throw messageError
     }
 
-    // Get document context if requested
+    // Get document context using RAG search
     let documentContext = ''
     let relatedDocuments: any[] = []
 
     if (includeDocumentContext) {
-      let documentsQuery = supabaseClient
-        .from('documents')
-        .select('id, name, ai_summary, extracted_text, category')
-        .eq('user_id', user.id)
+      try {
+        // Use RAG search for better document retrieval
+        const ragResponse = await supabaseClient.functions.invoke('rag-search', {
+          body: {
+            query: message,
+            userId: user.id,
+            limit: 5,
+            documentIds: documentIds
+          },
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          }
+        })
 
-      if (documentIds && documentIds.length > 0) {
-        documentsQuery = documentsQuery.in('id', documentIds)
-      }
+        if (ragResponse.data?.success && ragResponse.data?.data?.relevant_documents) {
+          relatedDocuments = ragResponse.data.data.relevant_documents
+          documentContext = ragResponse.data.data.context_text || ''
+          console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
+        } else {
+          // Fallback to simple search if RAG fails
+          console.log('RAG search failed, using fallback search')
+          let documentsQuery = supabaseClient
+            .from('documents')
+            .select('id, name, ai_summary, extracted_text, category')
+            .eq('user_id', user.id)
 
-      const { data: documents } = await documentsQuery.limit(10)
+          if (documentIds && documentIds.length > 0) {
+            documentsQuery = documentsQuery.in('id', documentIds)
+          }
 
-      if (documents && documents.length > 0) {
-        // Use simple keyword search
-        relatedDocuments = documents.filter(doc => {
-          const searchTerms = message.toLowerCase().split(' ')
-          const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
-          return searchTerms.some(term => docText.includes(term))
-        }).slice(0, 5)
+          const { data: documents } = await documentsQuery.limit(10)
 
-        if (relatedDocuments.length > 0) {
-          documentContext = relatedDocuments.map(doc => 
-            `Document: ${doc.name}\nCategory: ${doc.category}\nSummary: ${doc.ai_summary || 'No summary available'}`
-          ).join('\n\n')
+          if (documents && documents.length > 0) {
+            relatedDocuments = documents.filter(doc => {
+              const searchTerms = message.toLowerCase().split(' ')
+              const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
+              return searchTerms.some(term => docText.includes(term))
+            }).slice(0, 5)
+
+            if (relatedDocuments.length > 0) {
+              documentContext = relatedDocuments.map(doc => 
+                `Document: ${doc.name}\nCategory: ${doc.category}\nSummary: ${doc.ai_summary || 'No summary available'}`
+              ).join('\n\n')
+            }
+          }
         }
+      } catch (ragError) {
+        console.error('RAG search error:', ragError)
+        // Continue with empty context if RAG fails
       }
     }
 
