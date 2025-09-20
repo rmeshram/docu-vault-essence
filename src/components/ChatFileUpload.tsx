@@ -35,7 +35,7 @@ export function ChatFileUpload({ onFileUploaded, disabled }: ChatFileUploadProps
 
       try {
         const result = await uploadDocument(file, {
-          category: 'Chat Upload',
+          category: 'Personal',
           tags: ['chat', 'uploaded'],
           enableAI: true,
           enableOCR: true
