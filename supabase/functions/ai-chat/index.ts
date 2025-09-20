@@ -117,98 +117,107 @@ serve(async (req) => {
 
     if (includeDocumentContext) {
       try {
-        console.log('Attempting RAG search...')
-        const ragResponse = await supabaseClient.functions.invoke('rag-search', {
-          body: {
-            query: message,
-            userId: user.id,
-            limit: 5,
-            documentIds: documentIds
-          },
-          headers: {
-            'Authorization': authHeader
-          }
-        })
-
-        console.log('RAG response status:', ragResponse.status)
-
-        if (ragResponse.data?.success && ragResponse.data?.data?.relevant_documents) {
-          relatedDocuments = ragResponse.data.data.relevant_documents
-          documentContext = ragResponse.data.data.context_text || ''
-          console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
-        } else {
-        console.log('RAG search failed, using direct database query')
-        console.log('User ID:', user.id)
-        
-        let documentsQuery = supabaseClient
-          .from('documents')
-          .select('id, name, ai_summary, extracted_text, category, created_at')
-          .eq('user_id', user.id)
-
+        // First try to get documents directly by ID if provided
         if (documentIds && documentIds.length > 0) {
-          documentsQuery = documentsQuery.in('id', documentIds)
-          console.log('Filtering by document IDs:', documentIds)
-        } else {
-          console.log('No specific document IDs provided, fetching recent documents')
-          documentsQuery = documentsQuery.order('created_at', { ascending: false })
-        }
+          console.log('Fetching documents by IDs:', documentIds)
+          const { data: documents, error: docError } = await supabaseClient
+            .from('documents')
+            .select('id, name, ai_summary, extracted_text, category, created_at')
+            .eq('user_id', user.id)
+            .in('id', documentIds)
 
-        const { data: documents, error: docError } = await documentsQuery.limit(20)
-        
-        if (docError) {
-          console.error('Database query error:', docError)
-        } else {
-          console.log('Direct DB query found documents:', documents?.length || 0)
-          if (documents && documents.length > 0) {
-            console.log('Sample document:', documents[0])
-          }
-        }
-
-          if (documents && documents.length > 0) {
-            console.log(`Found ${documents.length} documents for user`)
-            
-            // For general queries like "summarize", always include recent documents
-            if (message.toLowerCase().includes('summarize') || message.toLowerCase().includes('summary') || 
-                message.toLowerCase().includes('all') || message.toLowerCase().includes('documents') || 
-                documentIds?.length) {
-              relatedDocuments = documents.slice(0, 10)
-              console.log('Using documents for summary/general request:', relatedDocuments.length)
-            } else {
-              // Simple keyword matching for other queries
-              const searchTerms = message.toLowerCase().split(/\s+/).filter(term => term.length > 2)
-              
-              relatedDocuments = documents.filter(doc => {
-                const docText = (
-                  (doc.name || '') + ' ' + 
-                  (doc.ai_summary || '') + ' ' + 
-                  (doc.extracted_text || '') + ' ' + 
-                  (doc.category || '')
-                ).toLowerCase()
-                
-                return searchTerms.some(term => docText.includes(term))
-              }).slice(0, 5)
-              
-              // If no keyword matches, use recent documents
-              if (relatedDocuments.length === 0) {
-                relatedDocuments = documents.slice(0, 3)
-                console.log('No keyword matches, using recent documents:', relatedDocuments.length)
-              } else {
-                console.log('Found keyword matches:', relatedDocuments.length)
-              }
-            }
-
-            if (relatedDocuments.length > 0) {
-              documentContext = relatedDocuments.map(doc => 
-                `Document: ${doc.name}
+          if (docError) {
+            console.error('Direct document query error:', docError)
+          } else if (documents && documents.length > 0) {
+            console.log(`Found ${documents.length} documents by ID`)
+            relatedDocuments = documents
+            documentContext = documents.map(doc => 
+              `Document: ${doc.name}
 Category: ${doc.category || 'Uncategorized'}
 Summary: ${doc.ai_summary || 'No summary available'}
-Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
-              ).join('\n\n---\n\n')
+Content: ${(doc.extracted_text || '').substring(0, 1000)}...`
+            ).join('\n\n---\n\n')
+            console.log('Document context created, length:', documentContext.length)
+          } else {
+            console.log('No documents found by ID, falling back to RAG search')
+          }
+        }
+
+        // If no documents found by ID, try RAG search
+        if (relatedDocuments.length === 0) {
+          console.log('Attempting RAG search...')
+          const ragResponse = await supabaseClient.functions.invoke('rag-search', {
+            body: {
+              query: message,
+              userId: user.id,
+              limit: 5,
+              documentIds: documentIds
+            },
+            headers: {
+              'Authorization': authHeader
+            }
+          })
+
+          console.log('RAG response status:', ragResponse.status)
+
+          if (ragResponse.data?.success && ragResponse.data?.data?.relevant_documents) {
+            relatedDocuments = ragResponse.data.data.relevant_documents
+            documentContext = ragResponse.data.data.context_text || ''
+            console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
+          } else {
+            console.log('RAG search failed, using direct database query for recent documents')
+            const { data: documents, error: docError } = await supabaseClient
+              .from('documents')
+              .select('id, name, ai_summary, extracted_text, category, created_at')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(20)
+
+            if (!docError && documents && documents.length > 0) {
+              console.log(`Found ${documents.length} recent documents`)
+              
+              // For general queries like "summarize", always include recent documents
+              if (message.toLowerCase().includes('summarize') || message.toLowerCase().includes('summary') || 
+                  message.toLowerCase().includes('all') || message.toLowerCase().includes('documents')) {
+                relatedDocuments = documents.slice(0, 10)
+                console.log('Using documents for summary request:', relatedDocuments.length)
+              } else {
+                // Simple keyword matching for other queries
+                const searchTerms = message.toLowerCase().split(/\s+/).filter(term => term.length > 2)
+                
+                relatedDocuments = documents.filter(doc => {
+                  const docText = (
+                    (doc.name || '') + ' ' + 
+                    (doc.ai_summary || '') + ' ' + 
+                    (doc.extracted_text || '') + ' ' + 
+                    (doc.category || '')
+                  ).toLowerCase()
+                  
+                  return searchTerms.some(term => docText.includes(term))
+                }).slice(0, 5)
+                
+                // If no keyword matches, use recent documents
+                if (relatedDocuments.length === 0) {
+                  relatedDocuments = documents.slice(0, 3)
+                  console.log('No keyword matches, using recent documents:', relatedDocuments.length)
+                } else {
+                  console.log('Found keyword matches:', relatedDocuments.length)
+                }
+              }
+
+              if (relatedDocuments.length > 0) {
+                documentContext = relatedDocuments.map(doc => 
+                  `Document: ${doc.name}
+Category: ${doc.category || 'Uncategorized'}
+Summary: ${doc.ai_summary || 'No summary available'}
+Content: ${(doc.extracted_text || '').substring(0, 1000)}...`
+                ).join('\n\n---\n\n')
+              }
             }
           }
         }
       } catch (ragError) {
-        console.error('RAG search error:', ragError)
+        console.error('Document retrieval error:', ragError)
       }
     }
 
