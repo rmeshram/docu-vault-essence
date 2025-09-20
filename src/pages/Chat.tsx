@@ -160,14 +160,20 @@ export default function Chat() {
 
     try {
       setError(null);
-      await sendMessage(inputMessage, uploadedDocumentIds, {
+      // For queries like "summarize" without specific uploaded docs, use recent documents
+      const documentIdsToSend = uploadedDocumentIds.length > 0 
+        ? uploadedDocumentIds 
+        : (inputMessage.toLowerCase().includes('summarize') || inputMessage.toLowerCase().includes('summary'))
+          ? documents.slice(0, 5).map(doc => doc.id)
+          : [];
+      
+      await sendMessage(inputMessage, documentIdsToSend, {
         language: selectedLanguage,
         includeContext: true
       });
       setInputMessage('');
       setShowQuickPrompts(false);
-      // Clear uploaded document IDs after sending
-      setUploadedDocumentIds([]);
+      // Don't clear uploaded document IDs - keep them for follow-up questions
     } catch (error) {
       console.error('Failed to send message:', error);
       setError('Failed to send message. Please try again.');
@@ -184,7 +190,16 @@ export default function Chat() {
     
     try {
       setError(null);
-      await sendMessage(prompt, uploadedDocumentIds, {
+      // For queries like "summarize" or document-related prompts, use recent documents
+      const documentIdsToSend = uploadedDocumentIds.length > 0 
+        ? uploadedDocumentIds 
+        : (prompt.toLowerCase().includes('summarize') || prompt.toLowerCase().includes('summary') || 
+           prompt.toLowerCase().includes('documents') || prompt.toLowerCase().includes('show') ||
+           prompt.toLowerCase().includes('find'))
+          ? documents.slice(0, 5).map(doc => doc.id)
+          : [];
+      
+      await sendMessage(prompt, documentIdsToSend, {
         language: selectedLanguage,
         includeContext: true
       });
