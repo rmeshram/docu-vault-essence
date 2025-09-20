@@ -234,7 +234,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
               { 
                 role: 'system', 
@@ -324,7 +324,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            model: 'gpt-4',
+            model: 'gpt-4o-mini',
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message }
