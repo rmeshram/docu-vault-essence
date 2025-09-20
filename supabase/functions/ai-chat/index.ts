@@ -112,8 +112,11 @@ serve(async (req) => {
     let documentContext = ''
     let relatedDocuments: any[] = []
 
+    console.log('Starting document context retrieval...')
+
     if (includeDocumentContext) {
       try {
+        console.log('Attempting RAG search...')
         // Use RAG search for better document retrieval
         const ragResponse = await supabaseClient.functions.invoke('rag-search', {
           body: {
@@ -127,31 +130,70 @@ serve(async (req) => {
           }
         })
 
+        console.log('RAG response status:', ragResponse.status)
+        console.log('RAG response data:', ragResponse.data)
+
         if (ragResponse.data?.success && ragResponse.data?.data?.relevant_documents) {
           relatedDocuments = ragResponse.data.data.relevant_documents
           documentContext = ragResponse.data.data.context_text || ''
           console.log(`RAG search found ${relatedDocuments.length} relevant documents`)
         } else {
-          // Fallback to simple search if RAG fails
-          console.log('RAG search failed, using fallback search')
+          console.log('RAG search failed or returned no results, using direct database query')
+          
+          // Direct database query as fallback
+          console.log('Querying documents directly from database...')
           let documentsQuery = supabaseClient
             .from('documents')
-            .select('id, name, ai_summary, extracted_text, category')
+            .select('id, name, ai_summary, extracted_text, category, created_at')
             .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
 
           if (documentIds && documentIds.length > 0) {
             documentsQuery = documentsQuery.in('id', documentIds)
+            console.log('Filtering by specific document IDs:', documentIds)
           }
 
-          const { data: documents } = await documentsQuery.limit(20)
+          const { data: documents, error: docError } = await documentsQuery.limit(20)
+          
+          console.log('Database query result:', { documents: documents?.length, error: docError })
+
+          if (docError) {
+            console.error('Database query error:', docError)
+          }
 
           if (documents && documents.length > 0) {
             console.log(`Found ${documents.length} documents for user`)
             
-            // If no specific documents requested, use all documents for context
-            relatedDocuments = documentIds && documentIds.length > 0 ? 
-              documents.filter(doc => documentIds.includes(doc.id)) :
-              documents
+            // Use all documents if no specific search needed, otherwise search
+            if (message.toLowerCase().includes('all') || message.toLowerCase().includes('documents') || documentIds?.length) {
+              relatedDocuments = documents.slice(0, 10)
+              console.log('Using all documents for context')
+            } else {
+              // Simple keyword matching
+              const searchTerms = message.toLowerCase().split(/\s+/).filter(term => term.length > 2)
+              console.log('Search terms:', searchTerms)
+              
+              relatedDocuments = documents.filter(doc => {
+                const docText = (
+                  (doc.name || '') + ' ' + 
+                  (doc.ai_summary || '') + ' ' + 
+                  (doc.extracted_text || '') + ' ' + 
+                  (doc.category || '')
+                ).toLowerCase()
+                
+                const hasMatch = searchTerms.some(term => docText.includes(term))
+                if (hasMatch) {
+                  console.log(`Document "${doc.name}" matches search terms`)
+                }
+                return hasMatch
+              }).slice(0, 5)
+              
+              // If no keyword matches, use recent documents
+              if (relatedDocuments.length === 0) {
+                relatedDocuments = documents.slice(0, 3)
+                console.log('No keyword matches, using recent documents')
+              }
+            }
 
             console.log(`Using ${relatedDocuments.length} documents for context`)
 
@@ -160,7 +202,7 @@ serve(async (req) => {
                 `Document: ${doc.name}
 Category: ${doc.category || 'Uncategorized'}
 Summary: ${doc.ai_summary || 'No summary available'}
-Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
+Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
               ).join('\n\n---\n\n')
             }
           } else {
@@ -175,6 +217,9 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
 
     console.log(`Final context: ${relatedDocuments.length} documents, context length: ${documentContext.length}`)
     console.log('Document context preview:', documentContext.substring(0, 200))
+    console.log('Related documents:', relatedDocuments.map(d => d.name))
+    
+    } // End of includeDocumentContext check
     }
 
     // Generate AI response with function calling for query classification
@@ -311,6 +356,8 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
 
       // Fallback: Generate contextual response
       if (!aiResponse) {
+        console.log('No OpenAI response, generating contextual fallback')
+        console.log(`Available documents: ${relatedDocuments.length}`)
         aiResponse = generateContextualResponse(message, relatedDocuments, language)
         aiConfidence = 75
         tokensUsed = 150
@@ -318,6 +365,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
 
     } catch (error) {
       console.error('AI response generation failed:', error)
+      console.log(`Generating fallback with ${relatedDocuments.length} documents`)
       aiResponse = generateContextualResponse(message, relatedDocuments, language)
       aiConfidence = 60
       tokensUsed = 100
