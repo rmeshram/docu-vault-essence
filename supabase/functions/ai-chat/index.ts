@@ -123,7 +123,7 @@ serve(async (req) => {
             documentIds: documentIds
           },
           headers: {
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+            'Authorization': authHeader  // Pass the user's auth token
           }
         })
 
@@ -143,20 +143,28 @@ serve(async (req) => {
             documentsQuery = documentsQuery.in('id', documentIds)
           }
 
-          const { data: documents } = await documentsQuery.limit(10)
+          const { data: documents } = await documentsQuery.limit(20)
 
           if (documents && documents.length > 0) {
-            relatedDocuments = documents.filter(doc => {
-              const searchTerms = message.toLowerCase().split(' ')
-              const docText = (doc.name + ' ' + (doc.ai_summary || '') + ' ' + (doc.extracted_text || '')).toLowerCase()
-              return searchTerms.some(term => docText.includes(term))
-            }).slice(0, 5)
+            console.log(`Found ${documents.length} documents for user`)
+            
+            // If no specific documents requested, use all documents for context
+            relatedDocuments = documentIds && documentIds.length > 0 ? 
+              documents.filter(doc => documentIds.includes(doc.id)) :
+              documents
+
+            console.log(`Using ${relatedDocuments.length} documents for context`)
 
             if (relatedDocuments.length > 0) {
               documentContext = relatedDocuments.map(doc => 
-                `Document: ${doc.name}\nCategory: ${doc.category}\nSummary: ${doc.ai_summary || 'No summary available'}`
-              ).join('\n\n')
+                `Document: ${doc.name}
+Category: ${doc.category || 'Uncategorized'}
+Summary: ${doc.ai_summary || 'No summary available'}
+Content Preview: ${(doc.extracted_text || '').substring(0, 300)}...`
+              ).join('\n\n---\n\n')
             }
+          } else {
+            console.log('No documents found for user')
           }
         }
       } catch (ragError) {
