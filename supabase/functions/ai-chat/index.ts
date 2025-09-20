@@ -449,7 +449,7 @@ Content Preview: ${(doc.extracted_text || '').substring(0, 500)}...`
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      },
+      }
     )
   }
 })
