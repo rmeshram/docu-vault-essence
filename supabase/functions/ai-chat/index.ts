@@ -99,7 +99,7 @@ serve(async (req) => {
         user_id: user.id,
         message: message,
         is_user_message: true,
-        related_document_ids: ['247e13e8-46f8-4c94-9a58-fbb611411c40'] || []
+        related_document_ids: documentIds || []
       })
       .select()
       .single()
